@@ -33,10 +33,13 @@
             this.addKey = new System.Windows.Forms.Button();
             this.clearKeys = new System.Windows.Forms.Button();
             this.launchCine = new System.Windows.Forms.Button();
-            this.trackBar1 = new System.Windows.Forms.TrackBar();
+            this.fovBar = new System.Windows.Forms.TrackBar();
             this.fovValue = new System.Windows.Forms.Label();
             this.setDefaultFOV = new System.Windows.Forms.Button();
-            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
+            this.speedBar = new System.Windows.Forms.TrackBar();
+            this.cinematicSpeedLabel = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.fovBar)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.speedBar)).BeginInit();
             this.SuspendLayout();
             // 
             // checkBox1
@@ -81,21 +84,21 @@
             this.launchCine.UseVisualStyleBackColor = true;
             this.launchCine.Click += new System.EventHandler(this.launchCine_Click);
             // 
-            // trackBar1
+            // fovBar
             // 
-            this.trackBar1.Location = new System.Drawing.Point(13, 123);
-            this.trackBar1.Maximum = 30;
-            this.trackBar1.Minimum = 1;
-            this.trackBar1.Name = "trackBar1";
-            this.trackBar1.Size = new System.Drawing.Size(272, 45);
-            this.trackBar1.TabIndex = 4;
-            this.trackBar1.Value = 12;
-            this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
+            this.fovBar.Location = new System.Drawing.Point(12, 187);
+            this.fovBar.Maximum = 30;
+            this.fovBar.Minimum = 1;
+            this.fovBar.Name = "fovBar";
+            this.fovBar.Size = new System.Drawing.Size(272, 45);
+            this.fovBar.TabIndex = 4;
+            this.fovBar.Value = 12;
+            this.fovBar.Scroll += new System.EventHandler(this.trackBar1_Scroll);
             // 
             // fovValue
             // 
             this.fovValue.AutoSize = true;
-            this.fovValue.Location = new System.Drawing.Point(13, 107);
+            this.fovValue.Location = new System.Drawing.Point(12, 171);
             this.fovValue.Name = "fovValue";
             this.fovValue.Size = new System.Drawing.Size(49, 13);
             this.fovValue.TabIndex = 5;
@@ -103,7 +106,7 @@
             // 
             // setDefaultFOV
             // 
-            this.setDefaultFOV.Location = new System.Drawing.Point(16, 161);
+            this.setDefaultFOV.Location = new System.Drawing.Point(15, 225);
             this.setDefaultFOV.Name = "setDefaultFOV";
             this.setDefaultFOV.Size = new System.Drawing.Size(75, 23);
             this.setDefaultFOV.TabIndex = 6;
@@ -111,14 +114,35 @@
             this.setDefaultFOV.UseVisualStyleBackColor = true;
             this.setDefaultFOV.Click += new System.EventHandler(this.setDefaultFOV_Click);
             // 
+            // speedBar
+            // 
+            this.speedBar.Location = new System.Drawing.Point(13, 127);
+            this.speedBar.Maximum = 5;
+            this.speedBar.Minimum = 1;
+            this.speedBar.Name = "speedBar";
+            this.speedBar.Size = new System.Drawing.Size(272, 45);
+            this.speedBar.TabIndex = 7;
+            this.speedBar.Value = 1;
+            // 
+            // cinematicSpeedLabel
+            // 
+            this.cinematicSpeedLabel.AutoSize = true;
+            this.cinematicSpeedLabel.Location = new System.Drawing.Point(10, 111);
+            this.cinematicSpeedLabel.Name = "cinematicSpeedLabel";
+            this.cinematicSpeedLabel.Size = new System.Drawing.Size(85, 13);
+            this.cinematicSpeedLabel.TabIndex = 8;
+            this.cinematicSpeedLabel.Text = "Cinematic speed";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(308, 204);
+            this.ClientSize = new System.Drawing.Size(623, 409);
+            this.Controls.Add(this.cinematicSpeedLabel);
+            this.Controls.Add(this.speedBar);
             this.Controls.Add(this.setDefaultFOV);
             this.Controls.Add(this.fovValue);
-            this.Controls.Add(this.trackBar1);
+            this.Controls.Add(this.fovBar);
             this.Controls.Add(this.launchCine);
             this.Controls.Add(this.clearKeys);
             this.Controls.Add(this.addKey);
@@ -126,7 +150,8 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
             this.Text = "Rayman 2 Cinematic Mod";
-            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.fovBar)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.speedBar)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -138,9 +163,11 @@
         private System.Windows.Forms.Button addKey;
         private System.Windows.Forms.Button clearKeys;
         private System.Windows.Forms.Button launchCine;
-        private System.Windows.Forms.TrackBar trackBar1;
+        private System.Windows.Forms.TrackBar fovBar;
         private System.Windows.Forms.Label fovValue;
         private System.Windows.Forms.Button setDefaultFOV;
+        private System.Windows.Forms.TrackBar speedBar;
+        private System.Windows.Forms.Label cinematicSpeedLabel;
     }
 }
 

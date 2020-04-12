@@ -31,7 +31,8 @@ namespace R2CinematicMod
             int off_ForceCameraTgt = 0x473480; // original byte = 83, replaced by ret = C3
 
             Memory.WriteProcessMemory(processHandle, off_DNM_p_stDynamicsCameraMechanics, buffer, buffer.Length, ref bytesReadOrWritten);
-            Memory.WriteProcessMemory(processHandle, off_ForceCameraPos, buffer, buffer.Length, ref bytesReadOrWritten); Memory.WriteProcessMemory(processHandle, off_DNM_p_stDynamicsCameraMechanics, buffer, buffer.Length, ref bytesReadOrWritten);
+            Memory.WriteProcessMemory(processHandle, off_ForceCameraPos, buffer, buffer.Length, ref bytesReadOrWritten);
+            Memory.WriteProcessMemory(processHandle, off_DNM_p_stDynamicsCameraMechanics, buffer, buffer.Length, ref bytesReadOrWritten);
             Memory.WriteProcessMemory(processHandle, off_ForceCameraTgt, buffer, buffer.Length, ref bytesReadOrWritten);
 
             int off_cameraMatrix = Memory.GetPointerPath(processHandle, Constants.off_cameraArrayPointer, 0, 0x20);
@@ -84,12 +85,13 @@ namespace R2CinematicMod
 
             float yaw = eulers.Z;
             float pitch = eulers.X;
+            float roll = eulers.Y;
 
-            WriteXML(keyX, keyY, keyZ, yaw, pitch, fov);
-            Console.Write("Key placed at X: " + keyX + " Y: " + keyY + " Z: " + keyZ + " Yaw: " + yaw + " Pitch: " + pitch + " Fov: " + fov + "\n\n");
+            WriteXML(keyX, keyY, keyZ, yaw, pitch, roll, fov);
+            Console.Write("Key placed at X: " + keyX + " Y: " + keyY + " Z: " + keyZ + " Yaw: " + yaw + " Pitch: " + pitch + " Roll: " + roll + " Fov: " + fov + "\n\n");
         }
 
-        public static void WriteXML(float x, float y, float z, float yaw, float pitch, float fov)
+        public static void WriteXML(float x, float y, float z, float yaw, float pitch, float roll, float fov)
         {
             if (!File.Exists("KeyPoints.xml"))
             {
@@ -104,6 +106,7 @@ namespace R2CinematicMod
                 xmlWriter.WriteElementString("coordZ", z.ToString());
                 xmlWriter.WriteElementString("Yaw", yaw.ToString());
                 xmlWriter.WriteElementString("Pitch", pitch.ToString());
+                xmlWriter.WriteElementString("Roll", roll.ToString());
                 xmlWriter.WriteElementString("Fov", fov.ToString());
 
                 xmlWriter.WriteEndElement();
@@ -123,6 +126,7 @@ namespace R2CinematicMod
                    new XElement("coordZ", z.ToString()),
                    new XElement("Yaw", yaw.ToString()),
                    new XElement("Pitch", pitch.ToString()),
+                   new XElement("Roll", roll.ToString()),
                    new XElement("Fov", fov.ToString())));
                 xDocument.Save("KeyPoints.xml");
             }
@@ -135,7 +139,7 @@ namespace R2CinematicMod
             Console.Write("Keys cleared! \n\n");
         }
 
-        public void LaunchCinematic()
+        public void LaunchCinematic(float speed)
         {
             XmlDocument doc = new XmlDocument();
             try
@@ -163,6 +167,7 @@ namespace R2CinematicMod
 
                 float yaw = float.Parse(node.SelectSingleNode("Yaw").InnerText);
                 float pitch = float.Parse(node.SelectSingleNode("Pitch").InnerText);
+                float roll = float.Parse(node.SelectSingleNode("Roll").InnerText);
 
                 // First coords, set camera position
                 if (i == 0)
@@ -174,7 +179,7 @@ namespace R2CinematicMod
                     fov = float.Parse(node.SelectSingleNode("Fov").InnerText);
                     Memory.WriteProcessMemoryFloat(processHandle, off_cameraFOV, fov);
 
-                    matrix.m = matrix.m * Toe.Matrix4.CreateRotationX(pitch) * Toe.Matrix4.CreateRotationZ(yaw);
+                    matrix.m = matrix.m * Toe.Matrix4.CreateRotationX(pitch) * Toe.Matrix4.CreateRotationZ(yaw) * Toe.Matrix4.CreateRotationY(roll);
 
                     matrix.m.M14 = coordX;
                     matrix.m.M24 = coordY;
@@ -187,8 +192,8 @@ namespace R2CinematicMod
                     Matrix matrix;
                     matrix = Matrix.Read(processHandle, off_cameraMatrix);
 
-                    Quaternion targetRotation = new Quaternion(pitch, 0, yaw, 0);
-                    Vector3 targetRotationVector = new Vector3(targetRotation.X, 0, targetRotation.Z);
+                    Quaternion targetRotation = new Quaternion(pitch, roll, yaw, 0);
+                    Vector3 targetRotationVector = new Vector3(targetRotation.X, targetRotation.Y, targetRotation.Z);
 
                     Vector3 targetVector = new Vector3(coordX, coordY, coordZ);
                     Vector3 position = new Vector3(matrix.m.M14, matrix.m.M24, matrix.m.M34);
@@ -198,21 +203,21 @@ namespace R2CinematicMod
                     while (Math.Abs(position.X - targetVector.X) > 1 || Math.Abs(position.Y - targetVector.Y) > 1 || Math.Abs(position.Z - targetVector.Z) > 1)
                     {
                         // Lerp position
-                        position = Vector3.Lerp(position, targetVector, 0.00001f);
+                        position = Vector3.Lerp(position, targetVector, speed);
 
                         Quaternion rotation = matrix.m.ExtractRotation();
                         Vector3 eulers = Matrix.QuaternionToEuler(rotation);
                         // Lerp rotation
-                        eulers = Vector3.Lerp(eulers, targetRotationVector, 0.00001f);
+                        eulers = Vector3.Lerp(eulers, targetRotationVector, speed);
 
                         // Lerp fov
-                        fov = lerp(fov, targetFov, 0.00001f);
+                        fov = lerp(fov, targetFov, speed);
                         // Set fov
                         Memory.WriteProcessMemoryFloat(processHandle, off_cameraFOV, fov);
 
                         // Set matrix
                         matrix.m = matrix.m.ClearRotation();
-                        matrix.m = matrix.m * Toe.Matrix4.CreateRotationZ(eulers.Z) * Toe.Matrix4.CreateRotationX(eulers.X);
+                        matrix.m = matrix.m * Toe.Matrix4.CreateRotationZ(eulers.Z) * Toe.Matrix4.CreateRotationX(eulers.X) * Toe.Matrix4.CreateRotationY(eulers.Y);
 
                         matrix.m.M14 = position.X;
                         matrix.m.M24 = position.Y;
@@ -238,19 +243,56 @@ namespace R2CinematicMod
             Matrix matrix;
             matrix = Matrix.Read(processHandle, off_cameraMatrix);
 
+            float yaw = 0;
+            float pitch = 0;
+            float roll = 0;
+
             switch(direction)
             {
+                case "yawRight":
+                    yaw = 0.25f;
+                    break;
+                case "yawLeft":
+                    yaw = -0.25f;
+                    break;
+                case "pitchUp":
+                    pitch = 0.25f;
+                    break;
+                case "pitchDown":
+                    pitch = -0.25f;
+                    break;
+                case "rollClockW":
+                    roll = -0.25f;
+                    break;
+                case "rollAntiClockW":
+                    roll = 0.25f;
+                    break;
+            }
+
+            matrix.m = matrix.m * Toe.Matrix4.CreateRotationZ(yaw) * Toe.Matrix4.CreateRotationX(pitch) * Toe.Matrix4.CreateRotationY(roll);
+
+            Quaternion rotation = matrix.m.ExtractRotation();
+            Vector3 eulers = Matrix.QuaternionToEuler(rotation); //in radians
+
+            switch (direction)
+            {
                 case "forward":
-                    matrix.m.M24 += -(0.5f);
+                    matrix.m.M24 -= (float)Math.Cos(eulers.Z);
+                    matrix.m.M14 -= (float)Math.Sin(eulers.Z);
+                    matrix.m.M34 += (float)Math.Sin(eulers.X);
                     break;
                 case "backward":
-                    matrix.m.M24 += 0.5f;
+                    matrix.m.M24 += (float)Math.Cos(eulers.Z);
+                    matrix.m.M14 += (float)Math.Sin(eulers.Z);
+                    matrix.m.M34 -= (float)Math.Sin(eulers.X);
                     break;
                 case "left":
-                    matrix.m.M14 += 0.5f;
+                    matrix.m.M24 += (float)Math.Cos(eulers.Z + Math.PI/2);
+                    matrix.m.M14 += (float)Math.Sin(eulers.Z + Math.PI/2);
                     break;
                 case "right":
-                    matrix.m.M14 += -(0.5f);
+                    matrix.m.M24 += (float)Math.Cos(eulers.Z - Math.PI/2);
+                    matrix.m.M14 += (float)Math.Sin(eulers.Z - Math.PI/2);
                     break;
                 case "upward":
                     matrix.m.M34 += 0.5f;
@@ -258,19 +300,13 @@ namespace R2CinematicMod
                 case "downward":
                     matrix.m.M34 += -0.5f;
                     break;
-                case "yawRight":
-                    matrix.m = matrix.m * Toe.Matrix4.CreateRotationZ(0.25f);
-                    break;
-                case "yawLeft":
-                    matrix.m = matrix.m * Toe.Matrix4.CreateRotationZ(-0.25f);
-                    break;
-                case "pitchUp":
-                    matrix.m = matrix.m * Toe.Matrix4.CreateRotationX(0.25f);
-                    break;
-                case "pitchDown":
-                    matrix.m = matrix.m * Toe.Matrix4.CreateRotationX(-0.25f);
-                    break;
             }
+
+            //Console.Write("cos: " + (float)Math.Cos(eulers.Z) + "\n");
+            //Console.Write("sin: " + (float)Math.Sin(eulers.Z) + "\n");
+
+            //Console.Write("x: " + matrix.m.M24 + "\n");
+            //Console.Write("y: " + matrix.m.M14 + "\n");
 
             matrix.Write(processHandle, off_cameraMatrix);
         }

@@ -27,7 +27,7 @@ namespace R2CinematicMod
             CineModEnabled = false;
 
             // Init fov value (default one)
-            float fovFloatValue = trackBar1.Value / 10f;
+            float fovFloatValue = fovBar.Value / 10f;
             fovValue.Text = "FOV: " + fovFloatValue.ToString();
 
             enableCineCommands(false);
@@ -49,7 +49,7 @@ namespace R2CinematicMod
                 CineModEnabled = true;
                 enableCineCommands(true);
 
-                cineMod.ChangeFOV(trackBar1.Value / 10f);
+                cineMod.ChangeFOV(fovBar.Value / 10f);
                 cineMod.EnableCinematicMod();
             }
             else
@@ -69,7 +69,7 @@ namespace R2CinematicMod
 
         private void addKey_Click(object sender, EventArgs e)
         {
-            float fovFloatValue = trackBar1.Value / 10f;
+            float fovFloatValue = fovBar.Value / 10f;
 
             CinematicMod cineMod = new CinematicMod(this, r2Process);
             cineMod.AddKeyPoint(fovFloatValue);
@@ -85,8 +85,10 @@ namespace R2CinematicMod
         {
             CinematicMod cineMod = new CinematicMod(this, r2Process);
 
-            cineMod.LaunchCinematic();
-            cineMod.ChangeFOV(trackBar1.Value / 10f);
+            float speedValue = speedBar.Value / 100000f;
+
+            cineMod.LaunchCinematic(speedValue);
+            cineMod.ChangeFOV(fovBar.Value / 10f);
         }
 
         private void OnKeyPressed(object sender, GlobalKeyboardHookEventArgs e)
@@ -102,7 +104,7 @@ namespace R2CinematicMod
                 // P
                 if (e.KeyboardData.VirtualCode == 0x50)
                 {
-                    cineMod.AddKeyPoint(trackBar1.Value / 10f);
+                    cineMod.AddKeyPoint(fovBar.Value / 10f);
                 }
                 // O
                 if (e.KeyboardData.VirtualCode == 0x4F)
@@ -154,13 +156,23 @@ namespace R2CinematicMod
                 {
                     cineMod.MoveCamera("pitchDown");
                 }
+                // N
+                if (e.KeyboardData.VirtualCode == 0x42)
+                {
+                    cineMod.MoveCamera("rollClockW");
+                }
+                // B
+                if (e.KeyboardData.VirtualCode == 0x4E)
+                {
+                    cineMod.MoveCamera("rollAntiClockW");
+                }
             }
 
         }
 
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
-            float fovFloatValue = trackBar1.Value / 10f;
+            float fovFloatValue = fovBar.Value / 10f;
             fovValue.Text = "FOV: " + fovFloatValue.ToString();
 
             CinematicMod cineMod = new CinematicMod(this, r2Process);
@@ -169,8 +181,8 @@ namespace R2CinematicMod
 
         private void setDefaultFOV_Click(object sender, EventArgs e)
         {
-            trackBar1.Value = 12;
-            float fovFloatValue = trackBar1.Value / 10f;
+            fovBar.Value = 12;
+            float fovFloatValue = fovBar.Value / 10f;
             fovValue.Text = "FOV: " + fovFloatValue.ToString();
 
             CinematicMod cineMod = new CinematicMod(this, r2Process);
@@ -182,7 +194,8 @@ namespace R2CinematicMod
             addKey.Enabled = choice;
             clearKeys.Enabled = choice;
             launchCine.Enabled = choice;
-            trackBar1.Enabled = choice;
+            speedBar.Enabled = choice;
+            fovBar.Enabled = choice;
             setDefaultFOV.Enabled = choice;
         }
 
