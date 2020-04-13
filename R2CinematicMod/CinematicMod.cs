@@ -200,7 +200,9 @@ namespace R2CinematicMod
 
                     float targetFov = float.Parse(node.SelectSingleNode("Fov").InnerText);
 
-                    while (Math.Abs(position.X - targetVector.X) > 1 || Math.Abs(position.Y - targetVector.Y) > 1 || Math.Abs(position.Z - targetVector.Z) > 1)
+                    var time = 0.0;
+
+                    while(time < 1.0)
                     {
                         // Lerp position
                         position = Vector3.Lerp(position, targetVector, speed);
@@ -224,6 +226,8 @@ namespace R2CinematicMod
                         matrix.m.M34 = position.Z;
 
                         matrix.Write(processHandle, off_cameraMatrix);
+
+                        time += speed;
                     }
                 }
 

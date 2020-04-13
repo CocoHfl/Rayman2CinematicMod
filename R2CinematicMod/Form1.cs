@@ -17,6 +17,7 @@ namespace R2CinematicMod
         private GlobalKeyboardHook GlobalKeyboardHook { get; }
         public bool CineModEnabled { get; set; }
         public int r2Process { get; set; }
+        Thread cinematicThread = null;
 
         public Form1()
         {
@@ -87,8 +88,34 @@ namespace R2CinematicMod
 
             float speedValue = speedBar.Value / 100000f;
 
-            cineMod.LaunchCinematic(speedValue);
-            cineMod.ChangeFOV(fovBar.Value / 10f);
+            enableCineCommands(false);
+            stopButton.Enabled = true;
+            checkBox1.Enabled = false;
+
+            Action onCompleted = () =>
+            {
+                Invoke(new Action(() => 
+                {
+                    stopButton.Enabled = false;
+                    checkBox1.Enabled = true;
+                    enableCineCommands(true);
+                    cineMod.ChangeFOV(fovBar.Value / 10f);
+                }));              
+            };
+
+            cinematicThread = new Thread(() =>
+            {
+                try
+                {
+                    cineMod.LaunchCinematic(speedValue);
+                }
+                finally
+                {
+                    onCompleted();
+                }
+              });
+
+            cinematicThread.Start();
         }
 
         private void OnKeyPressed(object sender, GlobalKeyboardHookEventArgs e)
@@ -230,6 +257,20 @@ namespace R2CinematicMod
         public static void NotifyOnProcessExits(Process process, Action action)
         {
             Task.Run(() => process.WaitForExit()).ContinueWith(t => action());
+        }
+
+        private void stopButton_Click(object sender, EventArgs e)
+        {
+            if(cinematicThread.IsAlive)
+            {
+                cinematicThread.Abort();
+
+                CinematicMod cineMod = new CinematicMod(this, r2Process);
+                stopButton.Enabled = false;
+                checkBox1.Enabled = true;
+                enableCineCommands(true);
+                cineMod.ChangeFOV(fovBar.Value / 10f);
+            }
         }
     }
 }

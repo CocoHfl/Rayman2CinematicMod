@@ -38,6 +38,7 @@
             this.setDefaultFOV = new System.Windows.Forms.Button();
             this.speedBar = new System.Windows.Forms.TrackBar();
             this.cinematicSpeedLabel = new System.Windows.Forms.Label();
+            this.stopButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.fovBar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.speedBar)).BeginInit();
             this.SuspendLayout();
@@ -133,11 +134,23 @@
             this.cinematicSpeedLabel.TabIndex = 8;
             this.cinematicSpeedLabel.Text = "Cinematic speed";
             // 
+            // stopButton
+            // 
+            this.stopButton.Enabled = false;
+            this.stopButton.Location = new System.Drawing.Point(152, 72);
+            this.stopButton.Name = "stopButton";
+            this.stopButton.Size = new System.Drawing.Size(132, 23);
+            this.stopButton.TabIndex = 9;
+            this.stopButton.Text = "Stop";
+            this.stopButton.UseVisualStyleBackColor = true;
+            this.stopButton.Click += new System.EventHandler(this.stopButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(623, 409);
+            this.Controls.Add(this.stopButton);
             this.Controls.Add(this.cinematicSpeedLabel);
             this.Controls.Add(this.speedBar);
             this.Controls.Add(this.setDefaultFOV);
@@ -168,6 +181,7 @@
         private System.Windows.Forms.Button setDefaultFOV;
         private System.Windows.Forms.TrackBar speedBar;
         private System.Windows.Forms.Label cinematicSpeedLabel;
+        private System.Windows.Forms.Button stopButton;
     }
 }
 
