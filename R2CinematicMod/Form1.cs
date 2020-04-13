@@ -30,6 +30,7 @@ namespace R2CinematicMod
             // Init fov value (default one)
             float fovFloatValue = fovBar.Value / 10f;
             fovValue.Text = "FOV: " + fovFloatValue.ToString();
+            cinematicSpeedLabel.Text = "Cinematic speed: " + speedBar.Value.ToString();
 
             enableCineCommands(false);
 
@@ -204,6 +205,11 @@ namespace R2CinematicMod
 
             CinematicMod cineMod = new CinematicMod(this, r2Process);
             cineMod.ChangeFOV(fovFloatValue);
+        }
+
+        private void speedBar_Scroll(object sender, EventArgs e)
+        {
+            cinematicSpeedLabel.Text = "Cinematic speed: " + speedBar.Value.ToString();
         }
 
         private void setDefaultFOV_Click(object sender, EventArgs e)

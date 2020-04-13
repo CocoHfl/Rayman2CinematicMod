@@ -200,7 +200,7 @@ namespace R2CinematicMod
 
                     float targetFov = float.Parse(node.SelectSingleNode("Fov").InnerText);
 
-                    var time = 0.0;
+                    float time = 0.0f;
 
                     while(time < 1.0)
                     {
