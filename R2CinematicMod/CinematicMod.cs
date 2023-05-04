@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
@@ -16,82 +11,89 @@ namespace R2CinematicMod
 {
     class CinematicMod
     {
-        public int processHandle { get; set; }
+        private int ProcessHandle { get; set; }
 
-        public int bytesReadOrWritten = 0;
+        private int BytesReadOrWritten = 0;
+
+        private readonly int Off_DNM_p_stDynamicsCameraMechanics = 0x4359D0;
+        private readonly int Off_ForceCameraPos = 0x473420;
+        private readonly int Off_ForceCameraTgt = 0x473480;
 
         public void EnableCinematicMod()
         {
-            byte[] buffer = new byte[4];
-            buffer = new byte[] { 0xC3 };
+            var buffer = new byte[] { 0xC3 };
             Matrix matrix;
 
-            int off_DNM_p_stDynamicsCameraMechanics = 0x4359D0; // original byte = 81, replaced by ret = C3
-            int off_ForceCameraPos = 0x473420; // original byte = 53, replaced by ret = C3
-            int off_ForceCameraTgt = 0x473480; // original byte = 83, replaced by ret = C3
+            Memory.WriteProcessMemory(ProcessHandle, Off_DNM_p_stDynamicsCameraMechanics, buffer, buffer.Length, ref BytesReadOrWritten);
+            Memory.WriteProcessMemory(ProcessHandle, Off_ForceCameraPos, buffer, buffer.Length, ref BytesReadOrWritten);
+            Memory.WriteProcessMemory(ProcessHandle, Off_ForceCameraTgt, buffer, buffer.Length, ref BytesReadOrWritten);
 
-            Memory.WriteProcessMemory(processHandle, off_DNM_p_stDynamicsCameraMechanics, buffer, buffer.Length, ref bytesReadOrWritten);
-            Memory.WriteProcessMemory(processHandle, off_ForceCameraPos, buffer, buffer.Length, ref bytesReadOrWritten);
-            Memory.WriteProcessMemory(processHandle, off_DNM_p_stDynamicsCameraMechanics, buffer, buffer.Length, ref bytesReadOrWritten);
-            Memory.WriteProcessMemory(processHandle, off_ForceCameraTgt, buffer, buffer.Length, ref bytesReadOrWritten);
+            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
+            int off_cameraTarget = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0xc) + 0x68;
 
-            int off_cameraMatrix = Memory.GetPointerPath(processHandle, Constants.off_cameraArrayPointer, 0, 0x20);
-            int off_cameraTarget = Memory.GetPointerPath(processHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0xc) + 0x68;
-
-            int off_raymanMatrix = Memory.GetPointerPath(processHandle, off_cameraTarget, 0x20);
-            matrix = Matrix.Read(processHandle, off_raymanMatrix);
+            int off_raymanMatrix = Memory.GetPointerPath(ProcessHandle, off_cameraTarget, 0x20);
+            matrix = Matrix.Read(ProcessHandle, off_raymanMatrix);
 
             matrix.m = matrix.m.ClearRotation();
             matrix.m.M24 += 15.0f;
             matrix.m.M34 += 2.0f;
 
-            matrix.Write(processHandle, off_cameraMatrix);
+            matrix.Write(ProcessHandle, off_cameraMatrix);
         }
 
         public void DisableCinematicMod()
         {
-            byte[] buffer = new byte[4];
-
-            int off_DNM_p_stDynamicsCameraMechanics = 0x4359D0; // original byte = 81, replaced by ret = C3
-            int off_ForceCameraPos = 0x473420; // original byte = 53, replaced by ret = C3
-            int off_ForceCameraTgt = 0x473480; // original byte = 83, replaced by ret = C3
-
             // Restore camera
-            buffer = new byte[] { 0x81 };
-            Memory.WriteProcessMemory(processHandle, off_DNM_p_stDynamicsCameraMechanics, buffer, buffer.Length, ref bytesReadOrWritten);
+            var buffer = new byte[] { 0x81 };
+            Memory.WriteProcessMemory(ProcessHandle, Off_DNM_p_stDynamicsCameraMechanics, buffer, buffer.Length, ref BytesReadOrWritten);
             buffer = new byte[] { 0x53 };
-            Memory.WriteProcessMemory(processHandle, off_ForceCameraPos, buffer, buffer.Length, ref bytesReadOrWritten);
+            Memory.WriteProcessMemory(ProcessHandle, Off_ForceCameraPos, buffer, buffer.Length, ref BytesReadOrWritten);
             buffer = new byte[] { 0x83 };
-            Memory.WriteProcessMemory(processHandle, off_ForceCameraTgt, buffer, buffer.Length, ref bytesReadOrWritten);
+            Memory.WriteProcessMemory(ProcessHandle, Off_ForceCameraTgt, buffer, buffer.Length, ref BytesReadOrWritten);
 
-            int off_cameraFOV = Memory.GetPointerPath(processHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
-            Memory.WriteProcessMemoryFloat(processHandle, off_cameraFOV, 1.2f);
+            int off_cameraFOV = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
+            Memory.WriteProcessMemoryFloat(ProcessHandle, off_cameraFOV, 1.2f);
+        }
+
+        public void ResetCamera()
+        {
+            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
+
+            Matrix matrix = Matrix.Read(ProcessHandle, off_cameraMatrix);
+
+            matrix.m = matrix.m.ClearRotation();
+            matrix.Write(ProcessHandle, off_cameraMatrix);
         }
 
         public void AddKeyPoint(float fov)
         {
-            int off_cameraMatrix = Memory.GetPointerPath(processHandle, Constants.off_cameraArrayPointer, 0, 0x20);
+            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
 
             Matrix matrix;
-            matrix = Matrix.Read(processHandle, off_cameraMatrix);
+            matrix = Matrix.Read(ProcessHandle, off_cameraMatrix);
 
             float keyX = matrix.m.M14;
             float keyY = matrix.m.M24;
             float keyZ = matrix.m.M34;
 
-            Quaternion rotation = new Quaternion();
-            rotation = matrix.m.ExtractRotation();
+            Quaternion rotation = matrix.m.ExtractRotation();
             Vector3 eulers = Matrix.QuaternionToEuler(rotation);
 
-            float yaw = eulers.Z;
+            float yaw = eulers.Y;
             float pitch = eulers.X;
-            float roll = eulers.Y;
+            float roll = eulers.Z;
 
-            WriteXML(keyX, keyY, keyZ, yaw, pitch, roll, fov);
-            Console.Write("Key placed at X: " + keyX + " Y: " + keyY + " Z: " + keyZ + " Yaw: " + yaw + " Pitch: " + pitch + " Roll: " + roll + " Fov: " + fov + "\n\n");
+            WriteXML(
+                Math.Round(keyX, 3), 
+                Math.Round(keyY, 3), 
+                Math.Round(keyZ, 3), 
+                Math.Round(yaw, 3), 
+                Math.Round(pitch, 3), 
+                Math.Round(roll, 3), 
+                Math.Round(fov, 3));
         }
 
-        public static void WriteXML(float x, float y, float z, float yaw, float pitch, float roll, float fov)
+        public static void WriteXML(double x, double y, double z, double yaw, double pitch, double roll, double fov)
         {
             if (!File.Exists("KeyPoints.xml"))
             {
@@ -130,6 +132,8 @@ namespace R2CinematicMod
                    new XElement("Fov", fov.ToString())));
                 xDocument.Save("KeyPoints.xml");
             }
+
+            Console.Write("Key placed at X: " + x + " Y: " + y + " Z: " + z + " Yaw: " + yaw + " Pitch: " + pitch + " Roll: " + roll + " Fov: " + fov + "\n\n");
         }
 
         public void ClearKeyPoints()
@@ -141,7 +145,7 @@ namespace R2CinematicMod
 
         public void LaunchCinematic(float speed)
         {
-            XmlDocument doc = new XmlDocument();
+            var doc = new XmlDocument();
             try
             {
                 doc.Load("KeyPoints.xml");
@@ -152,106 +156,185 @@ namespace R2CinematicMod
                 return;
             }
 
-            int off_cameraMatrix = Memory.GetPointerPath(processHandle, Constants.off_cameraArrayPointer, 0, 0x20);
-            int off_cameraFOV = Memory.GetPointerPath(processHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
+            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
+            int off_cameraFOV = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
 
-            int i = 0;
-            float fov = 0;
+            XmlNodeList nodes = doc.DocumentElement.ChildNodes;
 
-            // Read key points in xml
-            foreach (XmlNode node in doc.DocumentElement.ChildNodes)
+            // Read key points from xml and store in a list
+            List<BezierPoint> keyPoints = new List<BezierPoint>();
+            for (int i = 0; i < nodes.Count; i++)
             {
-                float coordX = float.Parse(node.SelectSingleNode("coordX").InnerText);
-                float coordY = float.Parse(node.SelectSingleNode("coordY").InnerText);
-                float coordZ = float.Parse(node.SelectSingleNode("coordZ").InnerText);
+                float yaw = float.Parse(nodes[i].SelectSingleNode("Yaw").InnerText);
+                float pitch = float.Parse(nodes[i].SelectSingleNode("Pitch").InnerText);
+                float roll = float.Parse(nodes[i].SelectSingleNode("Roll").InnerText);
+                float fov = float.Parse(nodes[i].SelectSingleNode("Fov").InnerText);
+                float coordX = float.Parse(nodes[i].SelectSingleNode("coordX").InnerText);
+                float coordY = float.Parse(nodes[i].SelectSingleNode("coordY").InnerText);
+                float coordZ = float.Parse(nodes[i].SelectSingleNode("coordZ").InnerText);
 
-                float yaw = float.Parse(node.SelectSingleNode("Yaw").InnerText);
-                float pitch = float.Parse(node.SelectSingleNode("Pitch").InnerText);
-                float roll = float.Parse(node.SelectSingleNode("Roll").InnerText);
+                // Adding each keypoint position, rotation and fov
+                keyPoints.Add(new BezierPoint(
+                    new Vector3(coordX, coordY, coordZ),
+                    new Vector3(yaw, pitch, roll),
+                    fov));
+            }
 
-                // First coords, set camera position
-                if (i == 0)
+            // If there are less than 4 key points, add default points
+            while (keyPoints.Count < 4)
+            {
+                // Use the last key point as the default point
+                BezierPoint defaultKeyPoint = keyPoints[keyPoints.Count - 1];
+                keyPoints.Add(defaultKeyPoint);
+            }
+
+            // Check if the last group is incomplete (needs 3 points)
+            if ((keyPoints.Count - 4) % 3 != 0)
+            {
+                int lastGroupSize = (keyPoints.Count - 4) % 3;
+
+                //Set default key point, based on previous key point
+                BezierPoint defaultKeyPoint = keyPoints[keyPoints.Count - 1];
+
+                if (lastGroupSize == 1)
                 {
-                    Matrix matrix;
-                    matrix = Matrix.Read(processHandle, off_cameraMatrix);
-                    matrix.m = matrix.m.ClearRotation();
-
-                    fov = float.Parse(node.SelectSingleNode("Fov").InnerText);
-                    Memory.WriteProcessMemoryFloat(processHandle, off_cameraFOV, fov);
-
-                    matrix.m = matrix.m * Toe.Matrix4.CreateRotationX(pitch) * Toe.Matrix4.CreateRotationZ(yaw) * Toe.Matrix4.CreateRotationY(roll);
-
-                    matrix.m.M14 = coordX;
-                    matrix.m.M24 = coordY;
-                    matrix.m.M34 = coordZ;
-
-                    matrix.Write(processHandle, off_cameraMatrix);
+                    // Add two default key points
+                    keyPoints.Add(defaultKeyPoint);
+                    keyPoints.Add(defaultKeyPoint);
                 }
-                else
+                else if (lastGroupSize == 2)
                 {
-                    Matrix matrix;
-                    matrix = Matrix.Read(processHandle, off_cameraMatrix);
+                    // Add one default key point
+                    keyPoints.Add(defaultKeyPoint);
+                }
+            }
 
-                    Quaternion targetRotation = new Quaternion(pitch, roll, yaw, 0);
-                    Vector3 targetRotationVector = new Vector3(targetRotation.X, targetRotation.Y, targetRotation.Z);
+            List<BezierPoint> curvePoints = new List<BezierPoint>();
+            // Process key points in group of 4 to create the curves
+            for (int i = 0; i < keyPoints.Count - 3; i += 3)
+            {
+                BezierPoint bp0 = keyPoints[i];
+                BezierPoint bp1 = keyPoints[i + 1];
+                BezierPoint bp2 = keyPoints[i + 2];
+                BezierPoint bp3 = keyPoints[i + 3];
 
-                    Vector3 targetVector = new Vector3(coordX, coordY, coordZ);
-                    Vector3 position = new Vector3(matrix.m.M14, matrix.m.M24, matrix.m.M34);
+                float t = 0;
+                while (t <= 1)
+                {
+                    // Processing cubic Bezier curve
+                    Vector3 pointOnCurve = CubicBezier(t, bp0.Position, bp1.Position, bp2.Position, bp3.Position);
 
-                    float targetFov = float.Parse(node.SelectSingleNode("Fov").InnerText);
+                    // Interpolate rotation
+                    Vector3 rotationOnCurve = SphericalInterpolation(t, bp0.Rotation, bp1.Rotation, bp2.Rotation, bp3.Rotation);
 
-                    float time = 0.0f;
+                    // Lerping fov
+                    float fov01 = Lerp(t, bp0.Fov, bp1.Fov);
+                    float fov12 = Lerp(t, bp1.Fov, bp2.Fov);
+                    float fov23 = Lerp(t, bp2.Fov, bp3.Fov);
 
-                    while(time < 1.0)
-                    {
-                        // Lerp position
-                        position = Vector3.Lerp(position, targetVector, speed);
+                    float fov012 = Lerp(t, fov01, fov12);
+                    float fov123 = Lerp(t, fov12, fov23);
 
-                        Quaternion rotation = matrix.m.ExtractRotation();
-                        Vector3 eulers = Matrix.QuaternionToEuler(rotation);
-                        // Lerp rotation
-                        eulers = Vector3.Lerp(eulers, targetRotationVector, speed);
+                    float fovOnCurve = Lerp(t, fov012, fov123);
 
-                        // Lerp fov
-                        fov = lerp(fov, targetFov, speed);
-                        // Set fov
-                        Memory.WriteProcessMemoryFloat(processHandle, off_cameraFOV, fov);
+                    // Add curve point data
+                    curvePoints.Add(new BezierPoint(pointOnCurve, rotationOnCurve, fovOnCurve));
 
-                        // Set matrix
-                        matrix.m = matrix.m.ClearRotation();
-                        matrix.m = matrix.m * Toe.Matrix4.CreateRotationZ(eulers.Z) * Toe.Matrix4.CreateRotationX(eulers.X) * Toe.Matrix4.CreateRotationY(eulers.Y);
+                    t += 0.001f; // Step size
+                }
+            }
 
-                        matrix.m.M14 = position.X;
-                        matrix.m.M24 = position.Y;
-                        matrix.m.M34 = position.Z;
+            float time = 0f;
+            float stepSize = speed / curvePoints.Count;
 
-                        matrix.Write(processHandle, off_cameraMatrix);
+            Matrix matrix = Matrix.Read(ProcessHandle, off_cameraMatrix);
 
-                        time += speed;
-                    }
+            // Render camera movement gradually in while loop
+            while (time < 1f)
+            {
+                int curveIndex = Convert.ToInt32(time * curvePoints.Count);
+                if (curveIndex >= curvePoints.Count)
+                {
+                    break;
                 }
 
-                i++;
+                Vector3 pointOnCurve = curvePoints[curveIndex].Position;
+
+                // Set fov
+                Memory.WriteProcessMemoryFloat(ProcessHandle, off_cameraFOV, curvePoints[curveIndex].Fov);
+
+                // Set rotation
+                matrix.m = matrix.m.ClearRotation();
+                matrix.m = matrix.m *
+                    Matrix4.CreateRotationZ(curvePoints[curveIndex].Rotation.Y) *
+                    Matrix4.CreateRotationX(curvePoints[curveIndex].Rotation.X) *
+                    Matrix4.CreateRotationY(curvePoints[curveIndex].Rotation.Z);
+
+                // Set position
+                matrix.m.M14 = pointOnCurve.X;
+                matrix.m.M24 = pointOnCurve.Y;
+                matrix.m.M34 = pointOnCurve.Z;
+
+                // Write matrix
+                matrix.Write(ProcessHandle, off_cameraMatrix);
+
+                time += stepSize;
             }
         }
 
-        public static float lerp(float a, float b, float f)
+        private float Lerp(float f, float a, float b)
         {
             return a + f * (b - a);
         }
 
+        // Cubic Bezier interpolation function
+        private Vector3 CubicBezier(float t, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
+        {
+            float u = 1 - t;
+            float tt = t * t;
+            float uu = u * u;
+            float uuu = uu * u;
+            float ttt = tt * t;
+
+            Vector3 p = uuu * p0;
+            p += 3 * uu * t * p1;
+            p += 3 * u * tt * p2;
+            p += ttt * p3;
+
+            return p;
+        }
+
+        private static Vector3 SphericalInterpolation(float t, Vector3 start, Vector3 mid1, Vector3 mid2, Vector3 end)
+        {
+            Quaternion qStart = Quaternion.EulerRotation(start.Z, start.X, start.Y);
+            Quaternion qMid1 = Quaternion.EulerRotation(mid1.Z, mid1.X, mid1.Y);
+            Quaternion qMid2 = Quaternion.EulerRotation(mid2.Z, mid2.X, mid2.Y);
+            Quaternion qEnd = Quaternion.EulerRotation(end.Z, end.X, end.Y);
+
+            Quaternion q1 = Quaternion.Slerp(qStart, qMid1, t);
+            Quaternion q2 = Quaternion.Slerp(qMid1, qMid2, t);
+            Quaternion q3 = Quaternion.Slerp(qMid2, qEnd, t);
+
+            Quaternion q4 = Quaternion.Slerp(q1, q2, t);
+            Quaternion q5 = Quaternion.Slerp(q2, q3, t);
+
+            Quaternion q6 = Quaternion.Slerp(q4, q5, t);
+
+            return Matrix.QuaternionToEuler(q6);
+        }
+
         public void MoveCamera(string direction)
         {
-            int off_cameraMatrix = Memory.GetPointerPath(processHandle, Constants.off_cameraArrayPointer, 0, 0x20);
+            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
 
             Matrix matrix;
-            matrix = Matrix.Read(processHandle, off_cameraMatrix);
+            matrix = Matrix.Read(ProcessHandle, off_cameraMatrix);
 
             float yaw = 0;
             float pitch = 0;
             float roll = 0;
 
-            switch(direction)
+            switch (direction)
             {
                 case "yawRight":
                     yaw = 0.25f;
@@ -291,12 +374,12 @@ namespace R2CinematicMod
                     matrix.m.M34 -= (float)Math.Sin(eulers.X);
                     break;
                 case "left":
-                    matrix.m.M24 += (float)Math.Cos(eulers.Z + Math.PI/2);
-                    matrix.m.M14 += (float)Math.Sin(eulers.Z + Math.PI/2);
+                    matrix.m.M24 += (float)Math.Cos(eulers.Z + Math.PI / 2);
+                    matrix.m.M14 += (float)Math.Sin(eulers.Z + Math.PI / 2);
                     break;
                 case "right":
-                    matrix.m.M24 += (float)Math.Cos(eulers.Z - Math.PI/2);
-                    matrix.m.M14 += (float)Math.Sin(eulers.Z - Math.PI/2);
+                    matrix.m.M24 += (float)Math.Cos(eulers.Z - Math.PI / 2);
+                    matrix.m.M14 += (float)Math.Sin(eulers.Z - Math.PI / 2);
                     break;
                 case "upward":
                     matrix.m.M34 += 0.5f;
@@ -306,24 +389,18 @@ namespace R2CinematicMod
                     break;
             }
 
-            //Console.Write("cos: " + (float)Math.Cos(eulers.Z) + "\n");
-            //Console.Write("sin: " + (float)Math.Sin(eulers.Z) + "\n");
-
-            //Console.Write("x: " + matrix.m.M24 + "\n");
-            //Console.Write("y: " + matrix.m.M14 + "\n");
-
-            matrix.Write(processHandle, off_cameraMatrix);
+            matrix.Write(ProcessHandle, off_cameraMatrix);
         }
 
         public void ChangeFOV(float fov)
         {
-            int off_cameraFOV = Memory.GetPointerPath(processHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
-            Memory.WriteProcessMemoryFloat(processHandle, off_cameraFOV, fov);
+            int off_cameraFOV = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
+            Memory.WriteProcessMemoryFloat(ProcessHandle, off_cameraFOV, fov);
         }
 
-        public CinematicMod(Form1 f, int processId)
+        public CinematicMod(int processId)
         {
-            processHandle = processId;
+            ProcessHandle = processId;
         }
     }
 }

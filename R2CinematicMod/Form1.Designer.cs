@@ -41,6 +41,7 @@
             this.stopButton = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
+            this.resetCam = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.fovBar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.speedBar)).BeginInit();
             this.SuspendLayout();
@@ -89,7 +90,7 @@
             // 
             // fovBar
             // 
-            this.fovBar.Location = new System.Drawing.Point(12, 213);
+            this.fovBar.Location = new System.Drawing.Point(11, 242);
             this.fovBar.Maximum = 30;
             this.fovBar.Minimum = 1;
             this.fovBar.Name = "fovBar";
@@ -101,7 +102,7 @@
             // fovValue
             // 
             this.fovValue.AutoSize = true;
-            this.fovValue.Location = new System.Drawing.Point(12, 197);
+            this.fovValue.Location = new System.Drawing.Point(11, 226);
             this.fovValue.Name = "fovValue";
             this.fovValue.Size = new System.Drawing.Size(49, 13);
             this.fovValue.TabIndex = 5;
@@ -109,7 +110,7 @@
             // 
             // setDefaultFOV
             // 
-            this.setDefaultFOV.Location = new System.Drawing.Point(15, 251);
+            this.setDefaultFOV.Location = new System.Drawing.Point(14, 280);
             this.setDefaultFOV.Name = "setDefaultFOV";
             this.setDefaultFOV.Size = new System.Drawing.Size(75, 23);
             this.setDefaultFOV.TabIndex = 6;
@@ -119,8 +120,7 @@
             // 
             // speedBar
             // 
-            this.speedBar.Location = new System.Drawing.Point(13, 153);
-            this.speedBar.Maximum = 5;
+            this.speedBar.Location = new System.Drawing.Point(12, 182);
             this.speedBar.Minimum = 1;
             this.speedBar.Name = "speedBar";
             this.speedBar.Size = new System.Drawing.Size(272, 45);
@@ -131,7 +131,7 @@
             // cinematicSpeedLabel
             // 
             this.cinematicSpeedLabel.AutoSize = true;
-            this.cinematicSpeedLabel.Location = new System.Drawing.Point(12, 111);
+            this.cinematicSpeedLabel.Location = new System.Drawing.Point(11, 140);
             this.cinematicSpeedLabel.Name = "cinematicSpeedLabel";
             this.cinematicSpeedLabel.Size = new System.Drawing.Size(85, 13);
             this.cinematicSpeedLabel.TabIndex = 8;
@@ -151,7 +151,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 134);
+            this.label1.Location = new System.Drawing.Point(11, 163);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(30, 13);
             this.label1.TabIndex = 10;
@@ -160,17 +160,28 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(257, 134);
+            this.label2.Location = new System.Drawing.Point(256, 163);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(27, 13);
             this.label2.TabIndex = 11;
             this.label2.Text = "Fast";
             // 
+            // resetCam
+            // 
+            this.resetCam.Location = new System.Drawing.Point(13, 102);
+            this.resetCam.Name = "resetCam";
+            this.resetCam.Size = new System.Drawing.Size(133, 23);
+            this.resetCam.TabIndex = 12;
+            this.resetCam.Text = "Reset camera";
+            this.resetCam.UseVisualStyleBackColor = true;
+            this.resetCam.Click += new System.EventHandler(this.resetCam_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(315, 295);
+            this.ClientSize = new System.Drawing.Size(315, 314);
+            this.Controls.Add(this.resetCam);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.stopButton);
@@ -207,6 +218,7 @@
         private System.Windows.Forms.Button stopButton;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Button resetCam;
     }
 }
 
