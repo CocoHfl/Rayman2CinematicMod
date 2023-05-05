@@ -19,6 +19,12 @@ namespace R2CinematicMod
         private readonly int Off_ForceCameraPos = 0x473420;
         private readonly int Off_ForceCameraTgt = 0x473480;
 
+        private readonly int Off_CameraMatrix;
+        private readonly int Off_CameraTarget;
+        private readonly int Off_CameraFov;
+        private readonly int Off_RaymanMatrix;
+        private readonly int Off_RaymanDsgVar16;
+
         public void EnableCinematicMod()
         {
             var buffer = new byte[] { 0xC3 };
@@ -28,17 +34,16 @@ namespace R2CinematicMod
             Memory.WriteProcessMemory(ProcessHandle, Off_ForceCameraPos, buffer, buffer.Length, ref BytesReadOrWritten);
             Memory.WriteProcessMemory(ProcessHandle, Off_ForceCameraTgt, buffer, buffer.Length, ref BytesReadOrWritten);
 
-            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
-            int off_cameraTarget = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0xc) + 0x68;
+            matrix = Matrix.Read(ProcessHandle, Off_RaymanMatrix);
 
-            int off_raymanMatrix = Memory.GetPointerPath(ProcessHandle, off_cameraTarget, 0x20);
-            matrix = Matrix.Read(ProcessHandle, off_raymanMatrix);
+            // Disable Rayman movements
+            Memory.WriteProcessMemoryByte(ProcessHandle, Off_RaymanDsgVar16, 0);
 
             matrix.m = matrix.m.ClearRotation();
             matrix.m.M24 += 15.0f;
             matrix.m.M34 += 2.0f;
 
-            matrix.Write(ProcessHandle, off_cameraMatrix);
+            matrix.Write(ProcessHandle, Off_CameraMatrix);
         }
 
         public void DisableCinematicMod()
@@ -51,26 +56,24 @@ namespace R2CinematicMod
             buffer = new byte[] { 0x83 };
             Memory.WriteProcessMemory(ProcessHandle, Off_ForceCameraTgt, buffer, buffer.Length, ref BytesReadOrWritten);
 
-            int off_cameraFOV = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
-            Memory.WriteProcessMemoryFloat(ProcessHandle, off_cameraFOV, 1.2f);
+            Memory.WriteProcessMemoryFloat(ProcessHandle, Off_CameraFov, 1.2f);
+
+            // Enable Rayman movements
+            Memory.WriteProcessMemoryByte(ProcessHandle, Off_RaymanDsgVar16, 1);
         }
 
         public void ResetCamera()
         {
-            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
-
-            Matrix matrix = Matrix.Read(ProcessHandle, off_cameraMatrix);
+            Matrix matrix = Matrix.Read(ProcessHandle, Off_CameraMatrix);
 
             matrix.m = matrix.m.ClearRotation();
-            matrix.Write(ProcessHandle, off_cameraMatrix);
+            matrix.Write(ProcessHandle, Off_CameraMatrix);
         }
 
         public void AddKeyPoint(float fov)
         {
-            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
-
             Matrix matrix;
-            matrix = Matrix.Read(ProcessHandle, off_cameraMatrix);
+            matrix = Matrix.Read(ProcessHandle, Off_CameraMatrix);
 
             float keyX = matrix.m.M14;
             float keyY = matrix.m.M24;
@@ -155,9 +158,6 @@ namespace R2CinematicMod
                 MessageBox.Show("You cannot launch a cinematic without registering key points.");
                 return;
             }
-
-            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
-            int off_cameraFOV = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
 
             XmlNodeList nodes = doc.DocumentElement.ChildNodes;
 
@@ -247,7 +247,7 @@ namespace R2CinematicMod
             float time = 0f;
             float stepSize = speed / curvePoints.Count;
 
-            Matrix matrix = Matrix.Read(ProcessHandle, off_cameraMatrix);
+            Matrix matrix = Matrix.Read(ProcessHandle, Off_CameraMatrix);
 
             // Render camera movement gradually in while loop
             while (time < 1f)
@@ -258,25 +258,26 @@ namespace R2CinematicMod
                     break;
                 }
 
-                Vector3 pointOnCurve = curvePoints[curveIndex].Position;
-
                 // Set fov
-                Memory.WriteProcessMemoryFloat(ProcessHandle, off_cameraFOV, curvePoints[curveIndex].Fov);
+                Memory.WriteProcessMemoryFloat(ProcessHandle, Off_CameraFov, curvePoints[curveIndex].Fov);
 
+                Vector3 rotationOnCurve = curvePoints[curveIndex].Rotation;
                 // Set rotation
                 matrix.m = matrix.m.ClearRotation();
                 matrix.m = matrix.m *
-                    Matrix4.CreateRotationZ(curvePoints[curveIndex].Rotation.Y) *
-                    Matrix4.CreateRotationX(curvePoints[curveIndex].Rotation.X) *
-                    Matrix4.CreateRotationY(curvePoints[curveIndex].Rotation.Z);
+                    Matrix4.CreateRotationZ(rotationOnCurve.Y) *
+                    Matrix4.CreateRotationX(rotationOnCurve.X) *
+                    Matrix4.CreateRotationY(rotationOnCurve.Z);
 
+
+                Vector3 pointOnCurve = curvePoints[curveIndex].Position;
                 // Set position
                 matrix.m.M14 = pointOnCurve.X;
                 matrix.m.M24 = pointOnCurve.Y;
                 matrix.m.M34 = pointOnCurve.Z;
 
                 // Write matrix
-                matrix.Write(ProcessHandle, off_cameraMatrix);
+                matrix.Write(ProcessHandle, Off_CameraMatrix);
 
                 time += stepSize;
             }
@@ -325,10 +326,8 @@ namespace R2CinematicMod
 
         public void MoveCamera(string direction)
         {
-            int off_cameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
-
             Matrix matrix;
-            matrix = Matrix.Read(ProcessHandle, off_cameraMatrix);
+            matrix = Matrix.Read(ProcessHandle, Off_CameraMatrix);
 
             float yaw = 0;
             float pitch = 0;
@@ -389,18 +388,24 @@ namespace R2CinematicMod
                     break;
             }
 
-            matrix.Write(ProcessHandle, off_cameraMatrix);
+            matrix.Write(ProcessHandle, Off_CameraMatrix);
         }
 
         public void ChangeFOV(float fov)
         {
-            int off_cameraFOV = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
-            Memory.WriteProcessMemoryFloat(ProcessHandle, off_cameraFOV, fov);
+            Memory.WriteProcessMemoryFloat(ProcessHandle, Off_CameraFov, fov);
         }
 
         public CinematicMod(int processId)
         {
             ProcessHandle = processId;
+
+            Off_CameraMatrix = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x20);
+            Off_CameraTarget = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0xc) + 0x68;
+            Off_CameraFov = Memory.GetPointerPath(ProcessHandle, Constants.off_cameraArrayPointer, 0, 0x4, 0x10, 0x4) + 0x5c;
+
+            Off_RaymanMatrix = Memory.GetPointerPath(ProcessHandle, Off_CameraTarget, 0x20);
+            Off_RaymanDsgVar16 = Memory.GetPointerPath(ProcessHandle, Constants.off_mainChar, 4, 0xC, 0, 0xC, 8) + 0x203;
         }
     }
 }
