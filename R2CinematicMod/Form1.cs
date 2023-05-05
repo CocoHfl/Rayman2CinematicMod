@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Forms;
-using Toe;
-using WindowsInput;
 
 namespace R2CinematicMod
 {
@@ -18,7 +14,11 @@ namespace R2CinematicMod
         public bool CineModEnabled { get; set; }
         public bool CineRunning {  get; set; }
         public int r2Process { get; set; }
+
         Thread cinematicThread = null;
+
+        [DllImport("user32.dll")]
+        private static extern long GetKeyboardLayoutName(StringBuilder pwszKLID);
 
         public Form1()
         {
@@ -143,28 +143,33 @@ namespace R2CinematicMod
                 if (e.KeyboardState != GlobalKeyboardHook.KeyboardState.KeyDown)
                     return;
 
+                StringBuilder name = new StringBuilder(9);
+                GetKeyboardLayoutName(name);
+
+                bool isAzerty = name.ToString() == "0000040C";
+
                 // P
                 if (e.KeyboardData.VirtualCode == 0x50)
                 {
                     cineMod.AddKeyPoint(fovBar.Value / 10f);
                 }
-                // O
-                if (e.KeyboardData.VirtualCode == 0x4F)
+                // W (azerty => Z)
+                if (e.KeyboardData.VirtualCode == (isAzerty ? 0x5A : 0x57))
                 {
                     cineMod.MoveCamera("forward");
                 }
-                // L
-                if (e.KeyboardData.VirtualCode == 0x4C)
+                // S
+                if (e.KeyboardData.VirtualCode == 0x53)
                 {
                     cineMod.MoveCamera("backward");
                 }
-                // K
-                if (e.KeyboardData.VirtualCode == 0x4B)
+                // A (azerty => Q)
+                if (e.KeyboardData.VirtualCode == (isAzerty ? 0x51 : 0x41))
                 {
                     cineMod.MoveCamera("left");
                 }
-                // M
-                if (e.KeyboardData.VirtualCode == 0x4D)
+                // D
+                if (e.KeyboardData.VirtualCode == 0x44)
                 {
                     cineMod.MoveCamera("right");
                 }
@@ -178,33 +183,33 @@ namespace R2CinematicMod
                 {
                     cineMod.MoveCamera("downward");
                 }
-                // I
-                if (e.KeyboardData.VirtualCode == 0x49)
+                // Right arrow
+                if (e.KeyboardData.VirtualCode == 0x27)
                 {
                     cineMod.MoveCamera("yawRight");
                 }
-                // U
-                if (e.KeyboardData.VirtualCode == 0x55)
+                // Left arrow
+                if (e.KeyboardData.VirtualCode == 0x25)
                 {
                     cineMod.MoveCamera("yawLeft");
                 }
-                // Y
-                if (e.KeyboardData.VirtualCode == 0x59)
+                // Down arrow
+                if (e.KeyboardData.VirtualCode == 0x28)
                 {
                     cineMod.MoveCamera("pitchUp");
                 }
-                // H
-                if (e.KeyboardData.VirtualCode == 0x48)
+                // Up arrow
+                if (e.KeyboardData.VirtualCode == 0x26)
                 {
                     cineMod.MoveCamera("pitchDown");
                 }
-                // N
-                if (e.KeyboardData.VirtualCode == 0x42)
+                // Q (azerty => A)
+                if (e.KeyboardData.VirtualCode == (isAzerty ? 0x41 : 0x51))
                 {
                     cineMod.MoveCamera("rollClockW");
                 }
-                // B
-                if (e.KeyboardData.VirtualCode == 0x4E)
+                // E
+                if (e.KeyboardData.VirtualCode == 0x45)
                 {
                     cineMod.MoveCamera("rollAntiClockW");
                 }
