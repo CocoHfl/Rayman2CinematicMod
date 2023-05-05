@@ -13,12 +13,19 @@ namespace R2CinematicMod
         private GlobalKeyboardHook GlobalKeyboardHook { get; }
         public bool CineModEnabled { get; set; }
         public bool CineRunning {  get; set; }
-        public int r2Process { get; set; }
+        public int R2Process { get; set; }
+        public int R2ProcessId { get; set; }
 
         Thread cinematicThread = null;
 
         [DllImport("user32.dll")]
         private static extern long GetKeyboardLayoutName(StringBuilder pwszKLID);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetWindowThreadProcessId(IntPtr hWnd, out uint ProcessId);
 
         public Form1()
         {
@@ -28,7 +35,7 @@ namespace R2CinematicMod
             Console.Write("|| Rayman 2 Cinematic Mod - By Coco ||\n");
             Console.Write("======================================\n");
 
-            r2Process = this.GetRayman2ProcessHandle();
+            R2Process = GetRayman2ProcessHandle();
 
             CineModEnabled = false;
 
@@ -51,7 +58,7 @@ namespace R2CinematicMod
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {
-            CinematicMod cineMod = new CinematicMod(r2Process);
+            CinematicMod cineMod = new CinematicMod(R2Process);
 
             if (checkBox1.Checked)
             {
@@ -72,7 +79,7 @@ namespace R2CinematicMod
 
         void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
-            CinematicMod cineMod = new CinematicMod(r2Process);
+            CinematicMod cineMod = new CinematicMod(R2Process);
             cineMod.DisableCinematicMod();
         }
 
@@ -80,13 +87,13 @@ namespace R2CinematicMod
         {
             float fovFloatValue = fovBar.Value / 10f;
 
-            CinematicMod cineMod = new CinematicMod(r2Process);
+            CinematicMod cineMod = new CinematicMod(R2Process);
             cineMod.AddKeyPoint(fovFloatValue);
         }
 
         private void clearKeys_Click(object sender, EventArgs e)
         {
-            CinematicMod cineMod = new CinematicMod(r2Process);
+            CinematicMod cineMod = new CinematicMod(R2Process);
             cineMod.ClearKeyPoints();
         }
 
@@ -97,7 +104,7 @@ namespace R2CinematicMod
 
         public void LaunchCine()
         {
-            CinematicMod cineMod = new CinematicMod(r2Process);
+            CinematicMod cineMod = new CinematicMod(R2Process);
 
             float speedValue = speedBar.Value / 1000f;
             
@@ -135,9 +142,11 @@ namespace R2CinematicMod
 
         private void OnKeyPressed(object sender, GlobalKeyboardHookEventArgs e)
         {
-            if (CineModEnabled && !CineRunning)
+            bool isRaymanWindowFocused = GetActiveProcessId() == R2ProcessId;
+
+            if (isRaymanWindowFocused && CineModEnabled && !CineRunning)
             {
-                CinematicMod cineMod = new CinematicMod(r2Process);
+                CinematicMod cineMod = new CinematicMod(R2Process);
 
                 // Only handle key down
                 if (e.KeyboardState != GlobalKeyboardHook.KeyboardState.KeyDown)
@@ -219,7 +228,15 @@ namespace R2CinematicMod
                     LaunchCine();
                 }
             }
+        }
 
+        private int GetActiveProcessId()
+        {
+            IntPtr hwnd = GetForegroundWindow();
+            uint pid;
+            GetWindowThreadProcessId(hwnd, out pid);
+            Process p = Process.GetProcessById((int)pid);
+            return p.Id;
         }
 
         private void trackBar1_Scroll(object sender, EventArgs e)
@@ -227,7 +244,7 @@ namespace R2CinematicMod
             float fovFloatValue = fovBar.Value / 10f;
             fovValue.Text = "FOV: " + fovFloatValue.ToString();
 
-            CinematicMod cineMod = new CinematicMod(r2Process);
+            CinematicMod cineMod = new CinematicMod(R2Process);
             cineMod.ChangeFOV(fovFloatValue);
         }
 
@@ -242,7 +259,7 @@ namespace R2CinematicMod
             float fovFloatValue = fovBar.Value / 10f;
             fovValue.Text = "FOV: " + fovFloatValue.ToString();
 
-            CinematicMod cineMod = new CinematicMod(r2Process);
+            CinematicMod cineMod = new CinematicMod(R2Process);
             cineMod.ChangeFOV(fovFloatValue);
         }
 
@@ -281,7 +298,9 @@ namespace R2CinematicMod
 
             NotifyOnProcessExits(process, () => Environment.Exit(0));
 
-            IntPtr processHandle = Memory.OpenProcess(Memory.PROCESS_WM_READ | Memory.PROCESS_VM_WRITE | Memory.PROCESS_VM_OPERATION, false, process.Id);
+            R2ProcessId = process.Id;
+
+            IntPtr processHandle = Memory.OpenProcess(Memory.PROCESS_WM_READ | Memory.PROCESS_VM_WRITE | Memory.PROCESS_VM_OPERATION, false, R2ProcessId);
 
             return (int)processHandle;
         }
@@ -297,7 +316,7 @@ namespace R2CinematicMod
             {
                 cinematicThread.Abort();
 
-                CinematicMod cineMod = new CinematicMod(r2Process);
+                CinematicMod cineMod = new CinematicMod(R2Process);
                 stopButton.Enabled = false;
                 checkBox1.Enabled = true;
                 enableCineCommands(true);
@@ -307,7 +326,7 @@ namespace R2CinematicMod
 
         private void resetCam_Click(object sender, EventArgs e)
         {
-            CinematicMod cineMod = new CinematicMod(r2Process);
+            CinematicMod cineMod = new CinematicMod(R2Process);
             cineMod.ResetCamera();
         }
     }
