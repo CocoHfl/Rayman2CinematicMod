@@ -70,7 +70,7 @@ namespace R2CinematicMod
             matrix.Write(ProcessHandle, Off_CameraMatrix);
         }
 
-        public void AddKeyPoint(float fov)
+        public void AddKeyPoint(XDocument keyPointsDoc, float fov)
         {
             Matrix matrix;
             matrix = Matrix.Read(ProcessHandle, Off_CameraMatrix);
@@ -87,6 +87,7 @@ namespace R2CinematicMod
             float roll = eulers.Z;
 
             WriteXML(
+                keyPointsDoc,
                 Math.Round(keyX, 3), 
                 Math.Round(keyY, 3), 
                 Math.Round(keyZ, 3), 
@@ -96,82 +97,74 @@ namespace R2CinematicMod
                 Math.Round(fov, 3));
         }
 
-        public static void WriteXML(double x, double y, double z, double yaw, double pitch, double roll, double fov)
+        public void UndoLastKeyPoint(XDocument keyPointsDoc)
         {
-            if (!File.Exists("KeyPoints.xml"))
+            if (keyPointsDoc.Element("coords").HasElements)
             {
-                XmlWriter xmlWriter = XmlWriter.Create("KeyPoints.xml");
+                var lastElem = keyPointsDoc.Element("coords")
+                     .Elements("keyPoint")
+                     .LastOrDefault();
 
-                xmlWriter.WriteStartDocument();
-                xmlWriter.WriteStartElement("coords");
-                xmlWriter.WriteStartElement("keyPoint");
+                lastElem.Remove();
+                keyPointsDoc.Save("KeyPoints.xml");
 
-                xmlWriter.WriteElementString("coordX", x.ToString());
-                xmlWriter.WriteElementString("coordY", y.ToString());
-                xmlWriter.WriteElementString("coordZ", z.ToString());
-                xmlWriter.WriteElementString("Yaw", yaw.ToString());
-                xmlWriter.WriteElementString("Pitch", pitch.ToString());
-                xmlWriter.WriteElementString("Roll", roll.ToString());
-                xmlWriter.WriteElementString("Fov", fov.ToString());
-
-                xmlWriter.WriteEndElement();
-                xmlWriter.WriteEndElement();
-
-                xmlWriter.Close();
+                Console.Write("Undid last key point.\n\n");
             }
-            else
-            {
-                XDocument xDocument = XDocument.Load("KeyPoints.xml");
-                XElement root = xDocument.Element("coords");
-                IEnumerable<XElement> rows = root.Descendants("keyPoint");
-                XElement firstRow = rows.Last();
-                firstRow.AddAfterSelf(new XElement("keyPoint",
+        }
+
+        public void ClearKeyPoints(XDocument keyPointsDoc)
+        {
+            keyPointsDoc.Element("coords").Elements("keyPoint").Remove();
+            keyPointsDoc.Save("KeyPoints.xml");
+
+            Console.Clear();
+            Console.Write("Keys cleared! \n\n");
+        }
+
+        public static void WriteXML(XDocument keyPointsDoc, double x, double y, double z, double yaw, double pitch, double roll, double fov)
+        {
+            var keyPointData = new XElement("keyPoint",
                    new XElement("coordX", x.ToString()),
                    new XElement("coordY", y.ToString()),
                    new XElement("coordZ", z.ToString()),
                    new XElement("Yaw", yaw.ToString()),
                    new XElement("Pitch", pitch.ToString()),
                    new XElement("Roll", roll.ToString()),
-                   new XElement("Fov", fov.ToString())));
-                xDocument.Save("KeyPoints.xml");
+                   new XElement("Fov", fov.ToString()));
+
+            XElement root = keyPointsDoc.Element("coords");
+
+            if(root.IsEmpty)
+            {
+                root.Add(keyPointData);
             }
+            else
+            {
+                IEnumerable<XElement> rows = root.Descendants("keyPoint");
+                XElement lastRow = rows.Last();
+                lastRow.AddAfterSelf(keyPointData);
+            }
+
+            keyPointsDoc.Save("KeyPoints.xml");
 
             Console.Write("Key placed at X: " + x + " Y: " + y + " Z: " + z + " Yaw: " + yaw + " Pitch: " + pitch + " Roll: " + roll + " Fov: " + fov + "\n\n");
         }
 
-        public void ClearKeyPoints()
+        public void LaunchCinematic(XDocument keyPointsDoc, float speed)
         {
-            File.Delete("KeyPoints.xml");
-            Console.Clear();
-            Console.Write("Keys cleared! \n\n");
-        }
-
-        public void LaunchCinematic(float speed)
-        {
-            var doc = new XmlDocument();
-            try
-            {
-                doc.Load("KeyPoints.xml");
-            }
-            catch (FileNotFoundException)
-            {
-                MessageBox.Show("You cannot launch a cinematic without registering key points.");
-                return;
-            }
-
-            XmlNodeList nodes = doc.DocumentElement.ChildNodes;
+            var nodes = keyPointsDoc.Element("coords").Elements("keyPoint").ToList();
 
             // Read key points from xml and store in a list
             List<BezierPoint> keyPoints = new List<BezierPoint>();
             for (int i = 0; i < nodes.Count; i++)
             {
-                float yaw = float.Parse(nodes[i].SelectSingleNode("Yaw").InnerText);
-                float pitch = float.Parse(nodes[i].SelectSingleNode("Pitch").InnerText);
-                float roll = float.Parse(nodes[i].SelectSingleNode("Roll").InnerText);
-                float fov = float.Parse(nodes[i].SelectSingleNode("Fov").InnerText);
-                float coordX = float.Parse(nodes[i].SelectSingleNode("coordX").InnerText);
-                float coordY = float.Parse(nodes[i].SelectSingleNode("coordY").InnerText);
-                float coordZ = float.Parse(nodes[i].SelectSingleNode("coordZ").InnerText);
+                float yaw = float.Parse(nodes[i].Element("Yaw").Value);
+                float pitch = float.Parse(nodes[i].Element("Pitch").Value);
+                float roll = float.Parse(nodes[i].Element("Roll").Value);
+                float fov = float.Parse(nodes[i].Element("Fov").Value);
+                float coordX = float.Parse(nodes[i].Element("coordX").Value);
+                float coordY = float.Parse(nodes[i].Element("coordY").Value);
+                float coordZ = float.Parse(nodes[i].Element("coordZ").Value);
 
                 // Adding each keypoint position, rotation and fov
                 keyPoints.Add(new BezierPoint(

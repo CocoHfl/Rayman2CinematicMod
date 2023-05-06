@@ -5,6 +5,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml;
+using System.Xml.Linq;
+using System.IO;
+using System.Linq;
 
 namespace R2CinematicMod
 {
@@ -16,7 +20,7 @@ namespace R2CinematicMod
         public int R2Process { get; set; }
         public int R2ProcessId { get; set; }
 
-        Thread cinematicThread = null;
+        Thread CinematicThread = null;
 
         [DllImport("user32.dll")]
         private static extern long GetKeyboardLayoutName(StringBuilder pwszKLID);
@@ -46,7 +50,7 @@ namespace R2CinematicMod
             speedBar.Value = 5;
             cinematicSpeedLabel.Text = "Cinematic speed: " + speedBar.Value.ToString();
 
-            enableCineCommands(false);
+            EnableCineCommands(false);
 
             // Keyboard hook
             GlobalKeyboardHook = new GlobalKeyboardHook();
@@ -63,7 +67,7 @@ namespace R2CinematicMod
             if (checkBox1.Checked)
             {
                 CineModEnabled = true;
-                enableCineCommands(true);
+                EnableCineCommands(true);
 
                 cineMod.ChangeFOV(fovBar.Value / 10f);
                 cineMod.EnableCinematicMod();
@@ -71,7 +75,7 @@ namespace R2CinematicMod
             else
             {
                 CineModEnabled = false;
-                enableCineCommands(false);
+                EnableCineCommands(false);
 
                 cineMod.DisableCinematicMod();
             }
@@ -88,13 +92,35 @@ namespace R2CinematicMod
             float fovFloatValue = fovBar.Value / 10f;
 
             CinematicMod cineMod = new CinematicMod(R2Process);
-            cineMod.AddKeyPoint(fovFloatValue);
+            cineMod.AddKeyPoint(LoadKeyPointsFile(), fovFloatValue);
+
+            undoKey.Enabled = true;
+            clearKeys.Enabled = true;
+            launchCine.Enabled = true;
+        }
+
+        private void undoKey_Click(object sender, EventArgs e)
+        {
+            CinematicMod cineMod = new CinematicMod(R2Process);
+
+            var kpFile = LoadKeyPointsFile();
+            cineMod.UndoLastKeyPoint(kpFile);
+
+            int numKeyPointsLeft = kpFile.Element("coords").Descendants("keyPoint").Count();
+
+            undoKey.Enabled = numKeyPointsLeft > 0;
+            clearKeys.Enabled = numKeyPointsLeft > 0;
+            launchCine.Enabled = numKeyPointsLeft > 0;
         }
 
         private void clearKeys_Click(object sender, EventArgs e)
         {
             CinematicMod cineMod = new CinematicMod(R2Process);
-            cineMod.ClearKeyPoints();
+            cineMod.ClearKeyPoints(LoadKeyPointsFile());
+
+            undoKey.Enabled = false;
+            clearKeys.Enabled = false;
+            launchCine.Enabled = false;
         }
 
         private void launchCine_Click(object sender, EventArgs e)
@@ -108,7 +134,7 @@ namespace R2CinematicMod
 
             float speedValue = speedBar.Value / 1000f;
             
-            enableCineCommands(false);
+            EnableCineCommands(false);
             stopButton.Enabled = true;
             checkBox1.Enabled = false;
 
@@ -118,18 +144,18 @@ namespace R2CinematicMod
                 {
                     stopButton.Enabled = false;
                     checkBox1.Enabled = true;
-                    enableCineCommands(true);
+                    EnableCineCommands(true);
                     cineMod.ChangeFOV(fovBar.Value / 10f);
                     CineRunning = false;
                 }));
             };
 
-            cinematicThread = new Thread(() =>
+            CinematicThread = new Thread(() =>
             {
                 try
                 {
                     CineRunning = true;
-                    cineMod.LaunchCinematic(speedValue);
+                    cineMod.LaunchCinematic(LoadKeyPointsFile(), speedValue);
                 }
                 finally
                 {
@@ -137,7 +163,7 @@ namespace R2CinematicMod
                 }
             });
 
-            cinematicThread.Start();
+            CinematicThread.Start();
         }
 
         private void OnKeyPressed(object sender, GlobalKeyboardHookEventArgs e)
@@ -160,7 +186,7 @@ namespace R2CinematicMod
                 // P
                 if (e.KeyboardData.VirtualCode == 0x50)
                 {
-                    cineMod.AddKeyPoint(fovBar.Value / 10f);
+                    cineMod.AddKeyPoint(LoadKeyPointsFile(), fovBar.Value / 10f);
                 }
                 // W (azerty => Z)
                 if (e.KeyboardData.VirtualCode == (isAzerty ? 0x5A : 0x57))
@@ -263,11 +289,14 @@ namespace R2CinematicMod
             cineMod.ChangeFOV(fovFloatValue);
         }
 
-        public void enableCineCommands(bool choice)
+        public void EnableCineCommands(bool choice)
         {
+            bool KeyPointsFileExists = LoadKeyPointsFile().Element("coords").HasElements;
+
             addKey.Enabled = choice;
-            clearKeys.Enabled = choice;
-            launchCine.Enabled = choice;
+            undoKey.Enabled = choice && KeyPointsFileExists;
+            clearKeys.Enabled = choice && KeyPointsFileExists;
+            launchCine.Enabled = choice && KeyPointsFileExists;
             speedBar.Enabled = choice;
             fovBar.Enabled = choice;
             setDefaultFOV.Enabled = choice;
@@ -312,14 +341,14 @@ namespace R2CinematicMod
 
         private void stopButton_Click(object sender, EventArgs e)
         {
-            if(cinematicThread.IsAlive)
+            if(CinematicThread.IsAlive)
             {
-                cinematicThread.Abort();
+                CinematicThread.Abort();
 
                 CinematicMod cineMod = new CinematicMod(R2Process);
                 stopButton.Enabled = false;
                 checkBox1.Enabled = true;
-                enableCineCommands(true);
+                EnableCineCommands(true);
                 cineMod.ChangeFOV(fovBar.Value / 10f);
             }
         }
@@ -328,6 +357,33 @@ namespace R2CinematicMod
         {
             CinematicMod cineMod = new CinematicMod(R2Process);
             cineMod.ResetCamera();
+        }
+
+        public XDocument LoadKeyPointsFile()
+        {
+            XDocument xDoc;
+
+            try
+            {
+                if (!File.Exists("KeyPoints.xml"))
+                {
+                    XmlWriter xmlWriter = XmlWriter.Create("KeyPoints.xml");
+
+                    xmlWriter.WriteStartDocument();
+                    xmlWriter.WriteStartElement("coords");
+                    xmlWriter.WriteEndElement();
+
+                    xmlWriter.Close();
+                }
+
+                xDoc = XDocument.Load("KeyPoints.xml");
+            }
+            catch
+            {
+                throw new Exception($"Could not generate/load KeyPoints.xml");
+            }
+
+            return xDoc;
         }
     }
 }
