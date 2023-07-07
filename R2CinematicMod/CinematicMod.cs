@@ -33,9 +33,6 @@ namespace R2CinematicMod
 
             matrix = Matrix.Read(ProcessHandle, Off_RaymanMatrix);
 
-            // Disable Rayman movements
-            Memory.WriteProcessMemoryByte(ProcessHandle, Off_RaymanDsgVar16, 0);
-
             matrix.m = matrix.m.ClearRotation();
             matrix.m.M24 += 15.0f;
             matrix.m.M34 += 2.0f;
@@ -54,9 +51,6 @@ namespace R2CinematicMod
             Memory.WriteProcessMemory(ProcessHandle, Off_ForceCameraTgt, buffer, buffer.Length, ref BytesReadOrWritten);
 
             Memory.WriteProcessMemoryFloat(ProcessHandle, Off_CameraFov, 1.2f);
-
-            // Enable Rayman movements
-            Memory.WriteProcessMemoryByte(ProcessHandle, Off_RaymanDsgVar16, 1);
         }
 
         public void ResetCamera()
@@ -149,9 +143,6 @@ namespace R2CinematicMod
 
         public void LaunchCinematic(XDocument keyPointsDoc, float speed)
         {
-            // Enable Rayman movements
-            Memory.WriteProcessMemoryByte(ProcessHandle, Off_RaymanDsgVar16, 1);
-
             var nodes = keyPointsDoc.Element("coords").Elements("keyPoint").ToList();
 
             // Read key points from xml and store in a list
@@ -274,9 +265,6 @@ namespace R2CinematicMod
 
                 time += stepSize;
             }
-
-            // Disable Rayman movements
-            Memory.WriteProcessMemoryByte(ProcessHandle, Off_RaymanDsgVar16, 0);
         }
 
         private float Lerp(float f, float a, float b)
@@ -390,6 +378,11 @@ namespace R2CinematicMod
         public void ChangeFOV(float fov)
         {
             Memory.WriteProcessMemoryFloat(ProcessHandle, Off_CameraFov, fov);
+        }
+
+        public void SetRaymanMovementsEnabled(bool enable)
+        {
+            Memory.WriteProcessMemoryByte(ProcessHandle, Off_RaymanDsgVar16, Convert.ToByte(enable ? 1 : 0));
         }
 
         public CinematicMod(int processId)

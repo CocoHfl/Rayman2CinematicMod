@@ -70,6 +70,7 @@ namespace R2CinematicMod
                 EnableCineCommands(true);
 
                 cineMod.ChangeFOV(fovBar.Value / 10f);
+                cineMod.SetRaymanMovementsEnabled(false);
                 cineMod.EnableCinematicMod();
             }
             else
@@ -77,6 +78,7 @@ namespace R2CinematicMod
                 CineModEnabled = false;
                 EnableCineCommands(false);
 
+                cineMod.SetRaymanMovementsEnabled(true);
                 cineMod.DisableCinematicMod();
             }
         }
@@ -147,6 +149,7 @@ namespace R2CinematicMod
                     EnableCineCommands(true);
                     cineMod.ChangeFOV(fovBar.Value / 10f);
                     CineRunning = false;
+                    cineMod.SetRaymanMovementsEnabled(false);
                 }));
             };
 
@@ -155,6 +158,7 @@ namespace R2CinematicMod
                 try
                 {
                     CineRunning = true;
+                    cineMod.SetRaymanMovementsEnabled(true);
                     cineMod.LaunchCinematic(LoadKeyPointsFile(), speedValue);
                 }
                 finally
@@ -344,12 +348,6 @@ namespace R2CinematicMod
             if(CinematicThread.IsAlive)
             {
                 CinematicThread.Abort();
-
-                CinematicMod cineMod = new CinematicMod(R2Process);
-                stopButton.Enabled = false;
-                checkBox1.Enabled = true;
-                EnableCineCommands(true);
-                cineMod.ChangeFOV(fovBar.Value / 10f);
             }
         }
 
