@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Windows.Forms;
-using System.Xml;
 using System.Xml.Linq;
 using Toe;
 
@@ -152,6 +149,9 @@ namespace R2CinematicMod
 
         public void LaunchCinematic(XDocument keyPointsDoc, float speed)
         {
+            // Enable Rayman movements
+            Memory.WriteProcessMemoryByte(ProcessHandle, Off_RaymanDsgVar16, 1);
+
             var nodes = keyPointsDoc.Element("coords").Elements("keyPoint").ToList();
 
             // Read key points from xml and store in a list
@@ -274,6 +274,9 @@ namespace R2CinematicMod
 
                 time += stepSize;
             }
+
+            // Disable Rayman movements
+            Memory.WriteProcessMemoryByte(ProcessHandle, Off_RaymanDsgVar16, 0);
         }
 
         private float Lerp(float f, float a, float b)
