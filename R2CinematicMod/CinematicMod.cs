@@ -1,26 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
 using Toe;
+using R2CinematicModCommon;
 
 namespace R2CinematicMod
 {
-    class CinematicMod
+    public class CinematicMod
     {
         private int ProcessHandle { get; set; }
 
         private int BytesReadOrWritten = 0;
 
-        private readonly int Off_DNM_p_stDynamicsCameraMechanics = 0x4359D0;
-        private readonly int Off_ForceCameraPos = 0x473420;
-        private readonly int Off_ForceCameraTgt = 0x473480;
+        public readonly int Off_DNM_p_stDynamicsCameraMechanics = 0x4359D0;
+        public readonly int Off_ForceCameraPos = 0x473420;
+        public readonly int Off_ForceCameraTgt = 0x473480;
 
-        private readonly int Off_CameraMatrix;
-        private readonly int Off_CameraTarget;
-        private readonly int Off_CameraFov;
-        private readonly int Off_RaymanMatrix;
-        private readonly int Off_RaymanDsgVar16;
+        public readonly int Off_CameraMatrix;
+        public readonly int Off_CameraTarget;
+        public readonly int Off_CameraFov;
+        public readonly int Off_RaymanMatrix;
+        public readonly int Off_RaymanDsgVar16;
 
         public void EnableCinematicMod()
         {
@@ -61,175 +60,18 @@ namespace R2CinematicMod
             matrix.Write(ProcessHandle, Off_CameraMatrix);
         }
 
-        public void AddKeyPoint(XDocument keyPointsDoc, float fov)
+        public void LaunchCinematic(float speed)
         {
-            Matrix matrix;
-            matrix = Matrix.Read(ProcessHandle, Off_CameraMatrix);
+            List<CurvePoint> keyPoints = new KeyPointsManager().ReadKeyPointsFromXML();
+            List<CurvePoint> curvePoints = CameraPathGenerator.GenerateCameraPath(keyPoints, 1000);
 
-            float keyX = matrix.m.M14;
-            float keyY = matrix.m.M24;
-            float keyZ = matrix.m.M34;
-
-            Quaternion rotation = matrix.m.ExtractRotation();
-            Vector3 eulers = Matrix.QuaternionToEuler(rotation);
-
-            float yaw = eulers.Y;
-            float pitch = eulers.X;
-            float roll = eulers.Z;
-
-            WriteXML(
-                keyPointsDoc,
-                Math.Round(keyX, 3), 
-                Math.Round(keyY, 3), 
-                Math.Round(keyZ, 3), 
-                Math.Round(yaw, 3), 
-                Math.Round(pitch, 3), 
-                Math.Round(roll, 3), 
-                Math.Round(fov, 3));
+            RenderCameraPath(curvePoints, speed);
         }
 
-        public void UndoLastKeyPoint(XDocument keyPointsDoc)
+        private void RenderCameraPath(List<CurvePoint> curvePoints, float speed)
         {
-            if (keyPointsDoc.Element("coords").HasElements)
-            {
-                var lastElem = keyPointsDoc.Element("coords")
-                     .Elements("keyPoint")
-                     .LastOrDefault();
-
-                lastElem.Remove();
-                keyPointsDoc.Save("KeyPoints.xml");
-
-                Console.Write("Undid last key point.\n\n");
-            }
-        }
-
-        public void ClearKeyPoints(XDocument keyPointsDoc)
-        {
-            keyPointsDoc.Element("coords").Elements("keyPoint").Remove();
-            keyPointsDoc.Save("KeyPoints.xml");
-
-            Console.Clear();
-            Console.Write("Keys cleared! \n\n");
-        }
-
-        public static void WriteXML(XDocument keyPointsDoc, double x, double y, double z, double yaw, double pitch, double roll, double fov)
-        {
-            var keyPointData = new XElement("keyPoint",
-                   new XElement("coordX", x.ToString()),
-                   new XElement("coordY", y.ToString()),
-                   new XElement("coordZ", z.ToString()),
-                   new XElement("Yaw", yaw.ToString()),
-                   new XElement("Pitch", pitch.ToString()),
-                   new XElement("Roll", roll.ToString()),
-                   new XElement("Fov", fov.ToString()));
-
-            XElement root = keyPointsDoc.Element("coords");
-
-            if(root.IsEmpty)
-            {
-                root.Add(keyPointData);
-            }
-            else
-            {
-                IEnumerable<XElement> rows = root.Descendants("keyPoint");
-                XElement lastRow = rows.Last();
-                lastRow.AddAfterSelf(keyPointData);
-            }
-
-            keyPointsDoc.Save("KeyPoints.xml");
-
-            Console.Write("Key placed at X: " + x + " Y: " + y + " Z: " + z + " Yaw: " + yaw + " Pitch: " + pitch + " Roll: " + roll + " Fov: " + fov + "\n\n");
-        }
-
-        public void LaunchCinematic(XDocument keyPointsDoc, float speed)
-        {
-            var nodes = keyPointsDoc.Element("coords").Elements("keyPoint").ToList();
-
-            // Read key points from xml and store in a list
-            List<BezierPoint> keyPoints = new List<BezierPoint>();
-            for (int i = 0; i < nodes.Count; i++)
-            {
-                float yaw = float.Parse(nodes[i].Element("Yaw").Value);
-                float pitch = float.Parse(nodes[i].Element("Pitch").Value);
-                float roll = float.Parse(nodes[i].Element("Roll").Value);
-                float fov = float.Parse(nodes[i].Element("Fov").Value);
-                float coordX = float.Parse(nodes[i].Element("coordX").Value);
-                float coordY = float.Parse(nodes[i].Element("coordY").Value);
-                float coordZ = float.Parse(nodes[i].Element("coordZ").Value);
-
-                // Adding each keypoint position, rotation and fov
-                keyPoints.Add(new BezierPoint(
-                    new Vector3(coordX, coordY, coordZ),
-                    new Vector3(yaw, pitch, roll),
-                    fov));
-            }
-
-            // If there are less than 4 key points, add default points
-            while (keyPoints.Count < 4)
-            {
-                // Use the last key point as the default point
-                BezierPoint defaultKeyPoint = keyPoints[keyPoints.Count - 1];
-                keyPoints.Add(defaultKeyPoint);
-            }
-
-            // Check if the last group is incomplete (needs 3 points)
-            if ((keyPoints.Count - 4) % 3 != 0)
-            {
-                int lastGroupSize = (keyPoints.Count - 4) % 3;
-
-                //Set default key point, based on previous key point
-                BezierPoint defaultKeyPoint = keyPoints[keyPoints.Count - 1];
-
-                if (lastGroupSize == 1)
-                {
-                    // Add two default key points
-                    keyPoints.Add(defaultKeyPoint);
-                    keyPoints.Add(defaultKeyPoint);
-                }
-                else if (lastGroupSize == 2)
-                {
-                    // Add one default key point
-                    keyPoints.Add(defaultKeyPoint);
-                }
-            }
-
-            List<BezierPoint> curvePoints = new List<BezierPoint>();
-            // Process key points in group of 4 to create the curves
-            for (int i = 0; i < keyPoints.Count - 3; i += 3)
-            {
-                BezierPoint bp0 = keyPoints[i];
-                BezierPoint bp1 = keyPoints[i + 1];
-                BezierPoint bp2 = keyPoints[i + 2];
-                BezierPoint bp3 = keyPoints[i + 3];
-
-                float t = 0;
-                while (t <= 1)
-                {
-                    // Processing cubic Bezier curve
-                    Vector3 pointOnCurve = CubicBezier(t, bp0.Position, bp1.Position, bp2.Position, bp3.Position);
-
-                    // Interpolate rotation
-                    Vector3 rotationOnCurve = SphericalInterpolation(t, bp0.Rotation, bp1.Rotation, bp2.Rotation, bp3.Rotation);
-
-                    // Lerping fov
-                    float fov01 = Lerp(t, bp0.Fov, bp1.Fov);
-                    float fov12 = Lerp(t, bp1.Fov, bp2.Fov);
-                    float fov23 = Lerp(t, bp2.Fov, bp3.Fov);
-
-                    float fov012 = Lerp(t, fov01, fov12);
-                    float fov123 = Lerp(t, fov12, fov23);
-
-                    float fovOnCurve = Lerp(t, fov012, fov123);
-
-                    // Add curve point data
-                    curvePoints.Add(new BezierPoint(pointOnCurve, rotationOnCurve, fovOnCurve));
-
-                    t += 0.001f; // Step size
-                }
-            }
-
             float time = 0f;
-            float stepSize = speed / curvePoints.Count;
+            float stepSize = speed / 2000f;
 
             Matrix matrix = Matrix.Read(ProcessHandle, Off_CameraMatrix);
 
@@ -237,10 +79,9 @@ namespace R2CinematicMod
             while (time < 1f)
             {
                 int curveIndex = Convert.ToInt32(time * curvePoints.Count);
+
                 if (curveIndex >= curvePoints.Count)
-                {
                     break;
-                }
 
                 // Set fov
                 Memory.WriteProcessMemoryFloat(ProcessHandle, Off_CameraFov, curvePoints[curveIndex].Fov);
@@ -265,47 +106,6 @@ namespace R2CinematicMod
 
                 time += stepSize;
             }
-        }
-
-        private float Lerp(float f, float a, float b)
-        {
-            return a + f * (b - a);
-        }
-
-        // Cubic Bezier interpolation function
-        private Vector3 CubicBezier(float t, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
-        {
-            float u = 1 - t;
-            float tt = t * t;
-            float uu = u * u;
-            float uuu = uu * u;
-            float ttt = tt * t;
-
-            Vector3 p = uuu * p0;
-            p += 3 * uu * t * p1;
-            p += 3 * u * tt * p2;
-            p += ttt * p3;
-
-            return p;
-        }
-
-        private static Vector3 SphericalInterpolation(float t, Vector3 start, Vector3 mid1, Vector3 mid2, Vector3 end)
-        {
-            Quaternion qStart = Quaternion.EulerRotation(start.Z, start.X, start.Y);
-            Quaternion qMid1 = Quaternion.EulerRotation(mid1.Z, mid1.X, mid1.Y);
-            Quaternion qMid2 = Quaternion.EulerRotation(mid2.Z, mid2.X, mid2.Y);
-            Quaternion qEnd = Quaternion.EulerRotation(end.Z, end.X, end.Y);
-
-            Quaternion q1 = Quaternion.Slerp(qStart, qMid1, t);
-            Quaternion q2 = Quaternion.Slerp(qMid1, qMid2, t);
-            Quaternion q3 = Quaternion.Slerp(qMid2, qEnd, t);
-
-            Quaternion q4 = Quaternion.Slerp(q1, q2, t);
-            Quaternion q5 = Quaternion.Slerp(q2, q3, t);
-
-            Quaternion q6 = Quaternion.Slerp(q4, q5, t);
-
-            return Matrix.QuaternionToEuler(q6);
         }
 
         public void MoveCamera(string direction)
@@ -339,7 +139,7 @@ namespace R2CinematicMod
                     break;
             }
 
-            matrix.m = matrix.m * Toe.Matrix4.CreateRotationZ(yaw) * Toe.Matrix4.CreateRotationX(pitch) * Toe.Matrix4.CreateRotationY(roll);
+            matrix.m = matrix.m * Matrix4.CreateRotationZ(yaw) * Matrix4.CreateRotationX(pitch) * Matrix4.CreateRotationY(roll);
 
             Quaternion rotation = matrix.m.ExtractRotation();
             Vector3 eulers = Matrix.QuaternionToEuler(rotation); //in radians

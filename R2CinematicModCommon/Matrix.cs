@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Toe;
 
-namespace R2CinematicMod
+namespace R2CinematicModCommon
 {
     /// <summary>
     /// Transformation matrix storing position, rotation and scale. Also, an unknown vector4 and type.

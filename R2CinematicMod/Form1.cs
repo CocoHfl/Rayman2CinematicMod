@@ -5,10 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml;
-using System.Xml.Linq;
-using System.IO;
-using System.Linq;
+using R2CinematicModCommon;
 
 namespace R2CinematicMod
 {
@@ -35,9 +32,7 @@ namespace R2CinematicMod
         {
             InitializeComponent();
 
-            Console.Write("======================================\n");
-            Console.Write("|| Rayman 2 Cinematic Mod - By Coco ||\n");
-            Console.Write("======================================\n");
+            textBox.Text = "Rayman 2 Cinematic Mod - By CoCo\r\n";
 
             R2Process = GetRayman2ProcessHandle();
 
@@ -58,6 +53,10 @@ namespace R2CinematicMod
 
             // Form closed event
             FormClosed += new FormClosedEventHandler(Form1_FormClosed);
+
+            // EasyHook inject
+            var hookManager = new HookManager("R2CinematicModHook.dll", new Logger(1000), "Rayman2", "Rayman2.exe", "Rayman2.exe.noshim");
+            hookManager.Inject();
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
@@ -94,7 +93,9 @@ namespace R2CinematicMod
             float fovFloatValue = fovBar.Value / 10f;
 
             CinematicMod cineMod = new CinematicMod(R2Process);
-            cineMod.AddKeyPoint(LoadKeyPointsFile(), fovFloatValue);
+
+            new KeyPointsManager().AddKeyPoint(fovFloatValue, R2Process, cineMod.Off_CameraMatrix, out string message);
+            textBox.Text += message;
 
             undoKey.Enabled = true;
             clearKeys.Enabled = true;
@@ -103,12 +104,11 @@ namespace R2CinematicMod
 
         private void undoKey_Click(object sender, EventArgs e)
         {
-            CinematicMod cineMod = new CinematicMod(R2Process);
+            var kpManager = new KeyPointsManager();
+            kpManager.UndoLastKeyPoint();
+            textBox.Text += "Undid last key point\r\n";
 
-            var kpFile = LoadKeyPointsFile();
-            cineMod.UndoLastKeyPoint(kpFile);
-
-            int numKeyPointsLeft = kpFile.Element("coords").Descendants("keyPoint").Count();
+            int numKeyPointsLeft = kpManager.KeyPointsCount();
 
             undoKey.Enabled = numKeyPointsLeft > 0;
             clearKeys.Enabled = numKeyPointsLeft > 0;
@@ -117,8 +117,9 @@ namespace R2CinematicMod
 
         private void clearKeys_Click(object sender, EventArgs e)
         {
-            CinematicMod cineMod = new CinematicMod(R2Process);
-            cineMod.ClearKeyPoints(LoadKeyPointsFile());
+            new KeyPointsManager().ClearKeyPoints();
+
+            textBox.Text = "Keys cleared! \r\n";
 
             undoKey.Enabled = false;
             clearKeys.Enabled = false;
@@ -132,6 +133,11 @@ namespace R2CinematicMod
 
         public void LaunchCine()
         {
+            if (new KeyPointsManager().KeyPointsCount() < 1)
+            {
+                return;
+            }
+
             CinematicMod cineMod = new CinematicMod(R2Process);
 
             float speedValue = speedBar.Value / 1000f;
@@ -159,7 +165,7 @@ namespace R2CinematicMod
                 {
                     CineRunning = true;
                     cineMod.SetRaymanMovementsEnabled(true);
-                    cineMod.LaunchCinematic(LoadKeyPointsFile(), speedValue);
+                    cineMod.LaunchCinematic(speedValue);
                 }
                 finally
                 {
@@ -190,7 +196,12 @@ namespace R2CinematicMod
                 // P
                 if (e.KeyboardData.VirtualCode == 0x50)
                 {
-                    cineMod.AddKeyPoint(LoadKeyPointsFile(), fovBar.Value / 10f);
+                    new KeyPointsManager().AddKeyPoint(fovBar.Value / 10f, R2Process, cineMod.Off_CameraMatrix, out string message);
+                    textBox.Text += message;
+
+                    undoKey.Enabled = true;
+                    clearKeys.Enabled = true;
+                    launchCine.Enabled = true;
                 }
                 // W (azerty => Z)
                 if (e.KeyboardData.VirtualCode == (isAzerty ? 0x5A : 0x57))
@@ -253,7 +264,7 @@ namespace R2CinematicMod
                     cineMod.MoveCamera("rollAntiClockW");
                 }
                 // Enter
-                if(e.KeyboardData.VirtualCode == 0x0D)
+                if (e.KeyboardData.VirtualCode == 0x0D)
                 {
                     LaunchCine();
                 }
@@ -295,7 +306,7 @@ namespace R2CinematicMod
 
         public void EnableCineCommands(bool choice)
         {
-            bool KeyPointsFileExists = LoadKeyPointsFile().Element("coords").HasElements;
+            bool KeyPointsFileExists = new KeyPointsManager().KeyPointsDoc.Element("coords").HasElements;
 
             addKey.Enabled = choice;
             undoKey.Enabled = choice && KeyPointsFileExists;
@@ -355,33 +366,6 @@ namespace R2CinematicMod
         {
             CinematicMod cineMod = new CinematicMod(R2Process);
             cineMod.ResetCamera();
-        }
-
-        public XDocument LoadKeyPointsFile()
-        {
-            XDocument xDoc;
-
-            try
-            {
-                if (!File.Exists("KeyPoints.xml"))
-                {
-                    XmlWriter xmlWriter = XmlWriter.Create("KeyPoints.xml");
-
-                    xmlWriter.WriteStartDocument();
-                    xmlWriter.WriteStartElement("coords");
-                    xmlWriter.WriteEndElement();
-
-                    xmlWriter.Close();
-                }
-
-                xDoc = XDocument.Load("KeyPoints.xml");
-            }
-            catch
-            {
-                throw new Exception($"Could not generate/load KeyPoints.xml");
-            }
-
-            return xDoc;
         }
     }
 }

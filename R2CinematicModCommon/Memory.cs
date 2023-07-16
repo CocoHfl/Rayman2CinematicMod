@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace R2CinematicMod
+namespace R2CinematicModCommon
 {
 
     public class Memory

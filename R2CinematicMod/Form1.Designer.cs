@@ -43,6 +43,9 @@
             this.label2 = new System.Windows.Forms.Label();
             this.resetCam = new System.Windows.Forms.Button();
             this.undoKey = new System.Windows.Forms.Button();
+            this.textBox = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.fovBar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.speedBar)).BeginInit();
             this.SuspendLayout();
@@ -187,11 +190,46 @@
             this.undoKey.UseVisualStyleBackColor = true;
             this.undoKey.Click += new System.EventHandler(this.undoKey_Click);
             // 
+            // textBox
+            // 
+            this.textBox.BackColor = System.Drawing.SystemColors.Control;
+            this.textBox.Location = new System.Drawing.Point(303, 24);
+            this.textBox.Multiline = true;
+            this.textBox.Name = "textBox";
+            this.textBox.ReadOnly = true;
+            this.textBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.textBox.Size = new System.Drawing.Size(274, 315);
+            this.textBox.TabIndex = 14;
+            this.textBox.TabStop = false;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label3.Location = new System.Drawing.Point(12, 313);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(138, 13);
+            this.label3.TabIndex = 15;
+            this.label3.Text = "F5 - Toggle draw key points";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label4.Location = new System.Drawing.Point(12, 330);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(117, 13);
+            this.label4.TabIndex = 16;
+            this.label4.Text = "F6 - Toggle draw curve";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(315, 314);
+            this.ClientSize = new System.Drawing.Size(597, 352);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.textBox);
             this.Controls.Add(this.undoKey);
             this.Controls.Add(this.resetCam);
             this.Controls.Add(this.label2);
@@ -232,6 +270,9 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button resetCam;
         private System.Windows.Forms.Button undoKey;
+        private System.Windows.Forms.TextBox textBox;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label4;
     }
 }
 
