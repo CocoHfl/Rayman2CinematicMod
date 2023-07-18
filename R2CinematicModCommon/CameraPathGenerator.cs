@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Toe;
 
 namespace R2CinematicModCommon
@@ -8,15 +7,36 @@ namespace R2CinematicModCommon
     {
         public static List<CurvePoint> GenerateCameraPath(List<CurvePoint> keyPoints, float segments)
         {
+            if (keyPoints.Count == 1)
+                return keyPoints;
+
             List<CurvePoint> pathPoints = new List<CurvePoint>();
 
-            for (int i = 0; i < keyPoints.Count; i += 3)
+            // Loop through key points, 4 at a time
+            for (int i = 0; i < keyPoints.Count - 1; i += 3)
             {
                 CurvePoint p0 = GetKeyPoint(keyPoints, i);
                 CurvePoint p1 = GetKeyPoint(keyPoints, i + 1);
                 CurvePoint p2 = GetKeyPoint(keyPoints, i + 2);
                 CurvePoint p3 = GetKeyPoint(keyPoints, i + 3);
 
+                if (i > 0)
+                {
+                    // Adjust the last control point of the previous group
+                    CurvePoint previousP2 = GetKeyPoint(keyPoints, i - 1);
+                    Vector3 p2OffsetPos = p0.Position - previousP2.Position;
+                    p1.Position = p0.Position + p2OffsetPos;
+                }
+
+                if (i < keyPoints.Count - 4)
+                {
+                    // Adjust the first control point of the next group
+                    CurvePoint nextP0 = GetKeyPoint(keyPoints, i + 4);
+                    Vector3 p1Offset = p3.Position - nextP0.Position;
+                    p2.Position = p3.Position + p1Offset;
+                }
+
+                // Generate interpolation on position, rotation and fov
                 for (int t = 0; t < segments; t++)
                 {
                     float tValue = t / (float)segments;
