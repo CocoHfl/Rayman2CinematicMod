@@ -46,6 +46,7 @@
             this.textBox = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
+            this.keyPointsCount = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.fovBar)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.speedBar)).BeginInit();
             this.SuspendLayout();
@@ -222,11 +223,22 @@
             this.label4.TabIndex = 16;
             this.label4.Text = "F6 - Toggle draw curve";
             // 
+            // keyPointsCount
+            // 
+            this.keyPointsCount.AutoSize = true;
+            this.keyPointsCount.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.keyPointsCount.Location = new System.Drawing.Point(300, 24);
+            this.keyPointsCount.Name = "keyPointsCount";
+            this.keyPointsCount.Size = new System.Drawing.Size(97, 13);
+            this.keyPointsCount.TabIndex = 17;
+            this.keyPointsCount.Text = "Key points placed: ";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(597, 352);
+            this.Controls.Add(this.keyPointsCount);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.textBox);
@@ -273,6 +285,7 @@
         private System.Windows.Forms.TextBox textBox;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label keyPointsCount;
     }
 }
 

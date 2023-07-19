@@ -45,6 +45,8 @@ namespace R2CinematicMod
             speedBar.Value = 5;
             cinematicSpeedLabel.Text = "Cinematic speed: " + speedBar.Value.ToString();
 
+            keyPointsCount.Text = $"Key points placed: {new KeyPointsManager().KeyPointsCount()}";
+
             EnableCineCommands(false);
 
             // Keyboard hook
@@ -94,7 +96,10 @@ namespace R2CinematicMod
 
             CinematicMod cineMod = new CinematicMod(R2Process);
 
-            new KeyPointsManager().AddKeyPoint(fovFloatValue, R2Process, cineMod.Off_CameraMatrix, out string message);
+            var keyPointsManager = new KeyPointsManager();
+            keyPointsManager.AddKeyPoint(fovFloatValue, R2Process, cineMod.Off_CameraMatrix, out string message);
+
+            keyPointsCount.Text = UpdateKeyPointsCountText(keyPointsManager.KeyPointsCount());
             textBox.Text += message;
 
             undoKey.Enabled = true;
@@ -106,6 +111,8 @@ namespace R2CinematicMod
         {
             var kpManager = new KeyPointsManager();
             kpManager.UndoLastKeyPoint();
+
+            keyPointsCount.Text = UpdateKeyPointsCountText(kpManager.KeyPointsCount());
             textBox.Text += "Undid last key point\r\n";
 
             int numKeyPointsLeft = kpManager.KeyPointsCount();
@@ -117,8 +124,10 @@ namespace R2CinematicMod
 
         private void clearKeys_Click(object sender, EventArgs e)
         {
-            new KeyPointsManager().ClearKeyPoints();
+            var kpManager = new KeyPointsManager();
+            kpManager.ClearKeyPoints();
 
+            keyPointsCount.Text = UpdateKeyPointsCountText(kpManager.KeyPointsCount());
             textBox.Text = "Keys cleared! \r\n";
 
             undoKey.Enabled = false;
@@ -196,7 +205,10 @@ namespace R2CinematicMod
                 // P
                 if (e.KeyboardData.VirtualCode == 0x50)
                 {
-                    new KeyPointsManager().AddKeyPoint(fovBar.Value / 10f, R2Process, cineMod.Off_CameraMatrix, out string message);
+                    var keyPointsManager = new KeyPointsManager();
+                    keyPointsManager.AddKeyPoint(fovBar.Value / 10f, R2Process, cineMod.Off_CameraMatrix, out string message);
+
+                    keyPointsCount.Text = UpdateKeyPointsCountText(keyPointsManager.KeyPointsCount());
                     textBox.Text += message;
 
                     undoKey.Enabled = true;
@@ -269,6 +281,11 @@ namespace R2CinematicMod
                     LaunchCine();
                 }
             }
+        }
+
+        private string UpdateKeyPointsCountText(int count)
+        {
+            return $"Key points placed: {count}";
         }
 
         private int GetActiveProcessId()
