@@ -247,7 +247,6 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
             this.Text = "Rayman 2 Cinematic Mod";
-            this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.fovBar)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.speedBar)).EndInit();
             this.ResumeLayout(false);
