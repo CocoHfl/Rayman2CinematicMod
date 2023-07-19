@@ -71,7 +71,7 @@ namespace R2CinematicMod
         private void RenderCameraPath(List<CurvePoint> curvePoints, float speed)
         {
             float time = 0f;
-            float stepSize = speed / 2000f;
+            float stepSize = speed / curvePoints.Count;
 
             Matrix matrix = Matrix.Read(ProcessHandle, Off_CameraMatrix);
 
