@@ -193,12 +193,12 @@
             // textBox
             // 
             this.textBox.BackColor = System.Drawing.SystemColors.Control;
-            this.textBox.Location = new System.Drawing.Point(303, 24);
+            this.textBox.Location = new System.Drawing.Point(303, 44);
             this.textBox.Multiline = true;
             this.textBox.Name = "textBox";
             this.textBox.ReadOnly = true;
             this.textBox.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox.Size = new System.Drawing.Size(274, 315);
+            this.textBox.Size = new System.Drawing.Size(274, 295);
             this.textBox.TabIndex = 14;
             this.textBox.TabStop = false;
             // 
@@ -247,6 +247,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
             this.Text = "Rayman 2 Cinematic Mod";
+            this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.fovBar)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.speedBar)).EndInit();
             this.ResumeLayout(false);
