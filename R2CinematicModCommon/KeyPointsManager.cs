@@ -91,21 +91,18 @@ namespace R2CinematicModCommon
             Quaternion rotation = matrix.m.ExtractRotation();
             Vector3 eulers = Matrix.QuaternionToEuler(rotation);
 
-            float yaw = eulers.Y;
-            float pitch = eulers.X;
-            float roll = eulers.Z;
+            double x = Math.Round(keyX, 3);
+            double y = Math.Round(keyY, 3);
+            double z = Math.Round(keyZ, 3);
 
-            WriteXML(
-                Math.Round(keyX, 3),
-                Math.Round(keyY, 3),
-                Math.Round(keyZ, 3),
-                Math.Round(yaw, 3),
-                Math.Round(pitch, 3),
-                Math.Round(roll, 3),
-                Math.Round(fov, 3));
+            double yaw = Math.Round(eulers.Y, 3);
+            double pitch = Math.Round(eulers.X, 3);
+            double roll = Math.Round(eulers.Z, 3);
+
+            WriteXML(x, y, z, yaw, pitch, roll, fov);
 
             message = "Key placed!\r\n" +
-                " X: " + keyX + " Y: " + keyY + " Z: " + keyZ + "\r\n" +
+                " X: " + x + " Y: " + y + " Z: " + z + "\r\n" +
                 " Yaw: " + yaw + " Pitch: " + pitch + " Roll: " + roll +
                 " Fov: " + fov + "\r\n";
         }
@@ -129,7 +126,7 @@ namespace R2CinematicModCommon
             KeyPointsDoc.Save(FileName);
         }
 
-        public void WriteXML(double x, double y, double z, double yaw, double pitch, double roll, double fov)
+        public void WriteXML(double x, double y, double z, double yaw, double pitch, double roll, float fov)
         {
             var keyPointData = new XElement("keyPoint",
                    new XElement("coordX", x.ToString()),
