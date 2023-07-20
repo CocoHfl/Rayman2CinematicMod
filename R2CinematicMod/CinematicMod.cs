@@ -90,9 +90,9 @@ namespace R2CinematicMod
                 // Set rotation
                 matrix.m = matrix.m.ClearRotation();
                 matrix.m = matrix.m *
-                    Matrix4.CreateRotationZ(rotationOnCurve.Y) *
-                    Matrix4.CreateRotationX(rotationOnCurve.X) *
-                    Matrix4.CreateRotationY(rotationOnCurve.Z);
+                    Matrix4.CreateRotationY(rotationOnCurve.Z) *
+                    Matrix4.CreateRotationZ(rotationOnCurve.X) *
+                    Matrix4.CreateRotationX(rotationOnCurve.Y);
 
 
                 Vector3 pointOnCurve = curvePoints[curveIndex].Position;
@@ -139,7 +139,7 @@ namespace R2CinematicMod
                     break;
             }
 
-            matrix.m = matrix.m * Matrix4.CreateRotationZ(yaw) * Matrix4.CreateRotationX(pitch) * Matrix4.CreateRotationY(roll);
+            matrix.m = matrix.m * Matrix4.CreateRotationY(roll) * Matrix4.CreateRotationZ(yaw) * Matrix4.CreateRotationX(pitch);
 
             Quaternion rotation = matrix.m.ExtractRotation();
             Vector3 eulers = Matrix.QuaternionToEuler(rotation); //in radians

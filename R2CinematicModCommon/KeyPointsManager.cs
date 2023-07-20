@@ -95,9 +95,9 @@ namespace R2CinematicModCommon
             double y = Math.Round(keyY, 3);
             double z = Math.Round(keyZ, 3);
 
-            double yaw = Math.Round(eulers.Y, 3);
+            double yaw = Math.Round(eulers.Z, 3);
             double pitch = Math.Round(eulers.X, 3);
-            double roll = Math.Round(eulers.Z, 3);
+            double roll = Math.Round(eulers.Y, 3);
 
             WriteXML(x, y, z, yaw, pitch, roll, fov);
 

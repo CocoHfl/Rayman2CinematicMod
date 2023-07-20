@@ -15,10 +15,10 @@ namespace R2CinematicModCommon
             // Loop through key points, 4 at a time
             for (int i = 0; i < keyPoints.Count - 1; i += 3)
             {
-                CurvePoint p0 = GetKeyPoint(keyPoints, i);
-                CurvePoint p1 = GetKeyPoint(keyPoints, i + 1);
-                CurvePoint p2 = GetKeyPoint(keyPoints, i + 2);
-                CurvePoint p3 = GetKeyPoint(keyPoints, i + 3);
+                CurvePoint p0 = GetKeyPoint(keyPoints, i); // Anchor point 1
+                CurvePoint p1 = GetKeyPoint(keyPoints, i + 1); // Control point 1
+                CurvePoint p2 = GetKeyPoint(keyPoints, i + 2); // Control point 2
+                CurvePoint p3 = GetKeyPoint(keyPoints, i + 3); // Anchor point 2
 
                 if (i > 0)
                 {
@@ -65,10 +65,10 @@ namespace R2CinematicModCommon
 
         private static Vector3 Slerp(Vector3 start, Vector3 mid1, Vector3 mid2, Vector3 end, float t)
         {
-            Quaternion qStart = Quaternion.EulerRotation(start.Z, start.X, start.Y);
-            Quaternion qMid1 = Quaternion.EulerRotation(mid1.Z, mid1.X, mid1.Y);
-            Quaternion qMid2 = Quaternion.EulerRotation(mid2.Z, mid2.X, mid2.Y);
-            Quaternion qEnd = Quaternion.EulerRotation(end.Z, end.X, end.Y);
+            Quaternion qStart = Quaternion.EulerRotation(start.Y, start.Z, start.X);
+            Quaternion qMid1 = Quaternion.EulerRotation(mid1.Y, mid1.Z, mid1.X);
+            Quaternion qMid2 = Quaternion.EulerRotation(mid2.Y, mid2.Z, mid2.X);
+            Quaternion qEnd = Quaternion.EulerRotation(end.Y, end.Z, end.X);
 
             Quaternion q1 = Quaternion.Slerp(qStart, qMid1, t);
             Quaternion q2 = Quaternion.Slerp(qMid1, qMid2, t);
