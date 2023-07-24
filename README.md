@@ -3,13 +3,13 @@
 Create cinematics within the game Rayman 2 (PC).
 
 <div float="left">
-  <img src="./imgs/UI.png" height="285" width="50%" />
-    <img src="./imgs/KeyPoints.png" alt="KeyPoints" height="285"  width="40%" />
+  <img src="./imgs/UI.png" height="285" width="480" />
+  <img src="./imgs/KeyPoints.png" alt="KeyPoints" height="285" width="480" />
 </div>
 
 <div float="left">
-  <img src="./imgs/CamPath.gif" alt="CamPath" height="285" width="50%" />
-    <img src="./imgs/DrawCurve.gif" alt="DrawCurve" height="285" width="40%" />
+  <img src="./imgs/CamPath.gif" alt="CamPath" height="285" width="480" />
+  <img src="./imgs/DrawCurve.gif" alt="DrawCurve" height="285" width="480" />
 </div>
 
 ## Setup
@@ -26,6 +26,8 @@ Create cinematics within the game Rayman 2 (PC).
 - Use <kbd>Q</kbd> / <kbd>E</kbd> to roll the camera **anti-clockwise** / **clockwise**
 - Press <kbd>P</kbd> to add a **key point**
 - Press <kbd>Enter</kbd> to **run the cinematic**
+- Press <kbd>F5</kbd> to toggle drawing placed key points
+- Press <kbd>F6</kbd> to toggle drawing curve path
 
 ## Credits
 Projects that greatly helped me achieve this mod:
